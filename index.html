@@ -4,10 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AgroKods — Gestão e Planejamento Rural</title>
-
- <!-- Ícone do AgroKods na aba do navegador -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23145A32'/%3E%3Cpath d='M32 51V29' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M32 31C19 31 13 23 14 12c11 0 20 5 18 19Z' fill='%237BC043'/%3E%3Cpath d='M32 38c2-12 10-18 21-18 1 11-5 20-21 21Z' fill='%2395D84B'/%3E%3C/svg%3E">
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -132,6 +128,7 @@ const NAVS=[
  {id:'producao',label:'Produção',icon:'M12 2C7 6 4 10 4 14a8 8 0 0016 0c0-4-3-8-8-12z'},
  {id:'financeiro',label:'Financeiro',icon:'M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6'},
  {id:'estoque',label:'Estoque',icon:'M3 7l9-4 9 4-9 4-9-4zM3 7v10l9 4 9-4V7M3 7l9 4'},
+ {id:'config',label:'Config.',icon:'M12 8a4 4 0 100 8 4 4 0 000-8zM19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1.04 1.56V21a2 2 0 11-4 0v-.09A1.7 1.7 0 008.96 19.4a1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.7 1.7 0 00.34-1.87 1.7 1.7 0 00-1.56-1.04H3a2 2 0 110-4h.09A1.7 1.7 0 004.6 8.96a1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06a1.7 1.7 0 001.87.34H9a1.7 1.7 0 001.04-1.56V3a2 2 0 114 0v.09a1.7 1.7 0 001.04 1.56 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06a1.7 1.7 0 00-.34 1.87V9a1.7 1.7 0 001.56 1.04H21a2 2 0 110 4h-.09A1.7 1.7 0 0019.4 15z'},
 ];
 const KEY='agrokods_v1';
 function seed(){
@@ -188,20 +185,31 @@ function seed(){
 }
 function todayISO(){return new Date().toISOString().slice(0,10);}
 function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+// Garante que um objeto de dados (recém-carregado ou importado de um backup) tenha todos os
+// campos que a versão atual do AgroKods espera, preenchendo apenas o que estiver faltando —
+// nunca sobrescreve dados já existentes. Isso permite abrir backups de versões mais antigas.
+function migrateDB(db){
+  if(!db.properties) db.properties=[];
+  if(!db.talhoes) db.talhoes=[];
+  if(!db.ciclos) db.ciclos=[];
+  if(db.weatherCache===undefined) db.weatherCache=null;
+  ['areas','tasks','culturas','projetos','sistemas','visitas','producao','estoque','compras'].forEach(k=>{ if(!db[k]) db[k]=[]; });
+  if(!db.financeiro) db.financeiro={receitas:[],despesas:[]};
+  else{ if(!db.financeiro.receitas) db.financeiro.receitas=[]; if(!db.financeiro.despesas) db.financeiro.despesas=[]; }
+  db.properties.forEach(p=>{
+    if(p.latitude===undefined) p.latitude=null;
+    if(p.longitude===undefined) p.longitude=null;
+    if(p.cidade===undefined) p.cidade='';
+    if(p.estado===undefined) p.estado='';
+    if(p.pais===undefined) p.pais='';
+    if(p.timezone===undefined) p.timezone='America/Sao_Paulo';
+  });
+  return db;
+}
 let DB;
 try{ const raw=localStorage.getItem(KEY); DB = raw? JSON.parse(raw) : seed(); if(!raw) save(); }
 catch(e){ DB = seed(); }
-if(!DB.talhoes) DB.talhoes=[];
-if(!DB.ciclos) DB.ciclos=[];
-if(DB.weatherCache===undefined) DB.weatherCache=null;
-DB.properties.forEach(p=>{
-  if(p.latitude===undefined) p.latitude=null;
-  if(p.longitude===undefined) p.longitude=null;
-  if(p.cidade===undefined) p.cidade='';
-  if(p.estado===undefined) p.estado='';
-  if(p.pais===undefined) p.pais='';
-  if(p.timezone===undefined) p.timezone='America/Sao_Paulo';
-});
+migrateDB(DB);
 save();
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){} }
 function areaName(id){ const a=DB.areas.find(x=>x.id===id); return a? a.name : '—'; }
@@ -304,6 +312,7 @@ let prodPeriodo='tudo';
 let finTab='receitas';
 let estTab='estoque';
 let prodSecOpen=true;
+let configMsg=null;
 const nav=document.getElementById('nav');
 function renderNav(){
   nav.innerHTML = NAVS.map(n=>`<button class="navitem ${view===n.id?'active':''}" data-nav="${n.id}">
@@ -338,6 +347,7 @@ function renderContent(){
   else if(view==='producao') c.innerHTML=viewProducao();
   else if(view==='financeiro') c.innerHTML=viewFinanceiro();
   else if(view==='estoque') c.innerHTML=viewEstoque();
+  else if(view==='config') c.innerHTML=viewConfig();
   else c.innerHTML=viewEmpty(NAVS.find(n=>n.id===view).label);
   bindContentEvents();
   if(view==='clima'||view==='dashboard') maybeRefreshClima();
@@ -610,6 +620,74 @@ function climaAlertas(days){
   if(maxTemp>=35) alerts.push({icon:'🌡️',title:'Atenção à temperatura',text:'Temperaturas elevadas previstas para os próximos dias.'});
   if(!alerts.length) return '';
   return alerts.map(a=>`<div class="card" style="margin-bottom:12px;border-left:4px solid var(--ochre)"><strong>${a.icon} ${a.title}</strong><p class="t2" style="margin:4px 0 0">${a.text}</p></div>`).join('');
+}
+function viewConfig(){
+  const msg=configMsg? `<div class="card" style="margin-bottom:14px;border-left:4px solid ${configMsg.error?'var(--brick)':'var(--forest)'}">
+    <p class="t2" style="margin:0;color:${configMsg.error?'var(--brick)':'var(--forest-d)'}">${configMsg.text}</p></div>` : '';
+  return `<h1 class="section-title">Configurações</h1><p class="section-sub">Backup e restauração dos dados do AgroKods.</p>
+  ${msg}
+  <div class="card">
+    <h3>Dados</h3>
+    <p class="t2" style="margin:0 0 14px">Exporte todos os dados do AgroKods para um arquivo JSON, para guardar ou levar para outro dispositivo. Você também pode restaurar um backup exportado anteriormente.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" data-export>⬇ Exportar dados</button>
+      <button class="btn ghost" data-import>⬆ Importar dados</button>
+    </div>
+    <input type="file" id="import-file-input" accept="application/json,.json" style="display:none">
+    <p class="empty" style="margin-top:12px">Importar um backup substitui todos os dados atuais deste dispositivo — você será avisado antes disso acontecer.</p>
+  </div>`;
+}
+// Reúne TODOS os dados do AgroKods (o objeto DB inteiro, a mesma estrutura salva no localStorage)
+// em um arquivo JSON baixável pelo navegador, usando apenas APIs padrão (Blob + <a download>).
+function exportData(){
+  const backup={app:'AgroKods',backupVersion:1,exportedAt:new Date().toISOString(),data:DB};
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`agrokods-backup-${todayISO()}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function isValidBackup(obj){
+  return !!(obj && obj.app==='AgroKods' && typeof obj.backupVersion==='number' && obj.data && typeof obj.data==='object' && Array.isArray(obj.data.properties));
+}
+function handleImportFile(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    let parsed;
+    try{ parsed=JSON.parse(reader.result); }
+    catch(err){ configMsg={text:'Arquivo inválido ou corrompido. Nenhum dado foi alterado.',error:true}; e.target.value=''; renderContent(); return; }
+    if(!isValidBackup(parsed)){ configMsg={text:'Este arquivo não é um backup válido do AgroKods. Nenhum dado foi alterado.',error:true}; e.target.value=''; renderContent(); return; }
+    e.target.value='';
+    openImportConfirm(parsed);
+  };
+  reader.onerror=()=>{ configMsg={text:'Não foi possível ler o arquivo selecionado.',error:true}; e.target.value=''; renderContent(); };
+  reader.readAsText(file);
+}
+function openImportConfirm(parsed){
+  const back=document.createElement('div'); back.className='modal-back';
+  const quando=parsed.exportedAt? new Date(parsed.exportedAt).toLocaleString('pt-BR') : 'data desconhecida';
+  back.innerHTML=`<div class="modal"><h3>Importar backup</h3>
+    <p class="t2">Importar este backup substituirá os dados atuais do AgroKods neste dispositivo. Deseja continuar?</p>
+    <p class="empty">Backup de ${quando} (versão ${parsed.backupVersion}).</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn ghost" id="imp-cancel">Cancelar</button>
+      <button class="btn" id="imp-confirm">Importar e substituir</button>
+    </div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#imp-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#imp-confirm').onclick=()=>{
+    try{ localStorage.setItem(KEY+'_prev_backup', JSON.stringify(DB)); }catch(err){}
+    const newData=parsed.data;
+    migrateDB(newData);
+    DB=newData;
+    save();
+    back.remove();
+    configMsg={text:'Backup importado com sucesso! Os dados desta tela já foram atualizados.',error:false};
+    renderContent();
+  };
 }
 function viewTarefas(){
   const sorted=[...DB.tasks].sort((a,b)=>(a.status==='concluída')-(b.status==='concluída') || a.date.localeCompare(b.date));
@@ -980,6 +1058,9 @@ function bindContentEvents(){
   const gotoLoc=document.querySelector('[data-goto-loc]'); if(gotoLoc) gotoLoc.onclick=()=>{ view='propriedade'; propTab='propriedades'; renderNav(); renderContent(); };
   const gotoClima=document.querySelector('[data-goto-clima]'); if(gotoClima) gotoClima.onclick=()=>{ view='clima'; renderNav(); renderContent(); };
   const refreshBtn=document.querySelector('[data-refresh-clima]'); if(refreshBtn) refreshBtn.onclick=()=>refreshClima();
+  const expBtn=document.querySelector('[data-export]'); if(expBtn) expBtn.onclick=exportData;
+  const impBtn=document.querySelector('[data-import]'); if(impBtn) impBtn.onclick=()=>document.getElementById('import-file-input').click();
+  const impInput=document.getElementById('import-file-input'); if(impInput) impInput.onchange=handleImportFile;
   const addProj=document.querySelector('[data-add-proj]'); if(addProj) addProj.onclick=()=>openProjetoForm();
   document.querySelectorAll('[data-edit-proj]').forEach(b=>b.onclick=()=>openProjetoForm(b.dataset.editProj));
   document.querySelectorAll('[data-del-proj]').forEach(b=>b.onclick=()=>{ DB.projetos=DB.projetos.filter(x=>x.id!==b.dataset.delProj); save(); renderContent(); });
