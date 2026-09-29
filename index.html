@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AgroKods — Gestão e Planejamento Rural</title>
+
+ <!-- Ícone do AgroKods na aba do navegador -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23145A32'/%3E%3Cpath d='M32 51V29' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M32 31C19 31 13 23 14 12c11 0 20 5 18 19Z' fill='%237BC043'/%3E%3Cpath d='M32 38c2-12 10-18 21-18 1 11-5 20-21 21Z' fill='%2395D84B'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F4EF; --surface:#FFFFFF; --ink:#1C2620; --ink-soft:#5B6B5E;
+  --line:#DDE4D8; --forest:#2F5233; --forest-d:#213A24; --ochre:#B8722E;
+  --brick:#A8432B; --sage:#7C9473; --radius:10px;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:#161B17;--surface:#1E2620;--ink:#EDF2EA;--ink-soft:#9FB09B;--line:#2C362E;--forest:#6FA377;--forest-d:#3E5F45;--ochre:#D99456;--brick:#D97862;--sage:#7C9473;}
+}
+:root[data-theme="dark"]{--bg:#161B17;--surface:#1E2620;--ink:#EDF2EA;--ink-soft:#9FB09B;--line:#2C362E;--forest:#6FA377;--forest-d:#3E5F45;--ochre:#D99456;--brick:#D97862;--sage:#7C9473;}
+*{box-sizing:border-box;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;min-height:100%;}
+h1,h2,h3,.brand{font-family:'Zilla Slab',serif;}
+button,input,select,textarea{font-family:inherit;color:inherit;}
+.app{display:flex;min-height:100vh;}
+header.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;padding-top:calc(14px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--line);}
+.brand{font-size:1.3rem;font-weight:700;color:var(--forest-d);letter-spacing:.2px;}
+.brand small{display:block;font-family:'Inter';font-weight:500;font-size:.68rem;color:var(--ink-soft);letter-spacing:.3px;}
+nav.side{display:flex;flex-direction:column;width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--line);padding:18px 10px;gap:2px;}
+nav.side .navitem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:.92rem;color:var(--ink-soft);border:none;background:none;text-align:left;width:100%;}
+nav.side .navitem svg{width:18px;height:18px;flex-shrink:0;}
+nav.side .navitem.active{background:var(--forest);color:#fff;}
+main{flex:1;min-width:0;padding:24px;max-width:920px;}
+.section-title{font-size:1.5rem;margin:0 0 4px;color:var(--forest-d);}
+.section-sub{color:var(--ink-soft);margin:0 0 20px;font-size:.92rem;}
+.visit-banner{background:linear-gradient(135deg,var(--forest) 0%,var(--forest-d) 100%);color:#fff;border-radius:var(--radius);padding:20px;margin-bottom:22px;}
+.visit-banner .eyebrow{opacity:.85;font-size:.8rem;margin:0 0 6px;}
+.visit-banner h2{margin:0 0 12px;font-size:1.25rem;color:#fff;}
+.visit-list{list-style:none;padding:0;margin:0;display:grid;gap:6px;}
+.visit-list li{display:flex;gap:8px;align-items:baseline;font-size:.92rem;}
+.visit-list li::before{content:"→";opacity:.7;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media (max-width:680px){.grid{grid-template-columns:1fr;}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+.card h3{margin:0 0 12px;font-size:1rem;color:var(--forest-d);}
+.task-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.9rem;}
+.task-row:last-child{border-bottom:none;}
+.task-row.done .task-title{text-decoration:line-through;color:var(--ink-soft);}
+.check{width:20px;height:20px;border-radius:50%;border:2px solid var(--sage);background:none;flex-shrink:0;cursor:pointer;position:relative;}
+.check.checked{background:var(--forest);border-color:var(--forest);}
+.check.checked::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;}
+.task-title{flex:1;}
+.tag{font-size:.68rem;padding:2px 8px;border-radius:20px;background:var(--bg);color:var(--ink-soft);border:1px solid var(--line);}
+.tag.overdue{background:var(--brick);color:#fff;border-color:var(--brick);}
+.empty{color:var(--ink-soft);font-size:.88rem;padding:8px 0;}
+.btn{background:var(--forest);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:.88rem;font-weight:600;cursor:pointer;}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--ink);}
+.btn.del{background:none;border:none;color:var(--brick);font-size:1rem;cursor:pointer;padding:2px 6px;}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+.field label{font-size:.8rem;color:var(--ink-soft);}
+.field input,.field select{padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:.9rem;}
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;z-index:20;}
+@media (min-width:680px){.modal-back{align-items:center;}}
+.modal{background:var(--surface);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:420px;max-height:88vh;overflow:auto;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));}
+@media (min-width:680px){.modal{border-radius:14px;}}
+.modal h3{margin-top:0;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fab{position:fixed;right:20px;bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--forest);color:#fff;border:none;width:52px;height:52px;border-radius:50%;font-size:1.5rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);}
+@media (min-width:680px){.fab{bottom:24px;}}
+.areas{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px;}
+@media (max-width:600px){.areas{grid-template-columns:1fr;}}
+.area-card{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;}
+.area-card h4{margin:0 0 4px;color:var(--forest-d);padding-right:44px;}
+.area-card p{margin:0;font-size:.85rem;color:var(--ink-soft);}
+.row-actions{position:absolute;top:10px;right:10px;display:flex;gap:2px;}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.tab{padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:var(--surface);font-size:.85rem;cursor:pointer;color:var(--ink-soft);}
+.tab.active{background:var(--forest);color:#fff;border-color:var(--forest);}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.card-head h3{margin:0;}
+.list-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.9rem;}
+.list-row:last-child{border-bottom:none;}
+.list-row .meta{flex:1;min-width:0;}
+.list-row .t1{font-weight:600;}
+.list-row.done .t1{text-decoration:line-through;color:var(--ink-soft);}
+.list-row .t2{color:var(--ink-soft);font-size:.8rem;}
+.iconbtn{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:.95rem;padding:4px 6px;}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;flex-shrink:0;}
+.stat-line{display:flex;align-items:center;gap:8px;font-size:.85rem;padding:4px 0;}
+.mini-bar-track{flex:1;height:8px;border-radius:6px;background:var(--bg);overflow:hidden;}
+.mini-bar{height:100%;border-radius:6px;background:var(--forest);}
+.indic-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+@media (max-width:600px){.indic-grid{grid-template-columns:repeat(2,1fr);}}
+.indic-card{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center;}
+.indic-card .l{font-size:.7rem;color:var(--ink-soft);margin-bottom:4px;}
+.indic-card .v{font-size:1.05rem;font-weight:700;color:var(--forest-d);}
+.hscroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
+.day-card{min-width:64px;flex-shrink:0;text-align:center;font-size:.82rem;}
+.hour-card{min-width:52px;flex-shrink:0;text-align:center;font-size:.78rem;}
+@media (max-width:760px){
+  nav.side{position:fixed;bottom:0;left:0;right:0;flex-direction:row;justify-content:space-around;width:100%;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0px));border-right:none;border-top:1px solid var(--line);z-index:8;overflow-x:auto;}
+  nav.side .navitem{flex-direction:column;gap:3px;font-size:.62rem;padding:6px 8px;white-space:nowrap;}
+  nav.side .navitem span{display:block;}
+  main{padding:16px;padding-bottom:100px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="side" id="nav"></nav>
+<main>
+<header class="top" style="display:none"></header>
+<div id="content"></div>
+</main>
+</div>
+<button class="fab" id="fab" title="Nova tarefa">+</button>
+
+<script>
+const NAVS=[
+ {id:'dashboard',label:'Dashboard',icon:'M3 12l9-9 9 9M5 10v10h14V10'},
+ {id:'propriedade',label:'Propriedade',icon:'M4 21V9l8-6 8 6v12H4z'},
+ {id:'clima',label:'Clima',icon:'M6.5 19a4.5 4.5 0 010-9c.3-2.5 2.4-4.5 5-4.5 2.3 0 4.2 1.5 4.8 3.6A4 4 0 0119 17.5a4 4 0 01-1 .5H6.5zM8 3v1.5M4 6l1 1M13 3.5l-.7 1.3'},
+ {id:'tarefas',label:'Tarefas',icon:'M9 11l3 3 8-8M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11'},
+ {id:'projetos',label:'Projetos',icon:'M3 7h18M3 12h18M3 17h10'},
+ {id:'sistemas',label:'Sistemas',icon:'M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8'},
+ {id:'visitas',label:'Visitas',icon:'M12 21c-4.5-4-7-7.5-7-11a7 7 0 0114 0c0 3.5-2.5 7-7 11zM12 8v3l2 1.5'},
+ {id:'producao',label:'Produção',icon:'M12 2C7 6 4 10 4 14a8 8 0 0016 0c0-4-3-8-8-12z'},
+ {id:'financeiro',label:'Financeiro',icon:'M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6'},
+ {id:'estoque',label:'Estoque',icon:'M3 7l9-4 9 4-9 4-9-4zM3 7v10l9 4 9-4V7M3 7l9 4'},
+];
+const KEY='agrokods_v1';
+function seed(){
+  return {
+    properties:[{id:'p1',name:'Rancho Blackberry',area:'1.000 m²',purpose:'Produção, lazer e consumo próprio',cidade:'Tupã',estado:'SP',pais:'Brasil',timezone:'America/Sao_Paulo',latitude:null,longitude:null}],
+    areas:[
+      {id:'a1',propertyId:'p1',name:'Frente',uso:'Árvores, frutas, sombra, lenha'},
+      {id:'a2',propertyId:'p1',name:'Meio',uso:'Casa, piscina, fogueira, lazer'},
+      {id:'a3',propertyId:'p1',name:'Fundo',uso:'Produção — amora, banana, mandioca'},
+    ],
+    tasks:[
+      {id:'t1',title:'Verificar amoreiras',area:'a3',categoria:'manutenção',prioridade:'alta',status:'pendente',date:todayISO(),recorrente:false,visita:true},
+      {id:'t2',title:'Fazer poda',area:'a3',categoria:'poda',prioridade:'alta',status:'pendente',date:todayISO(),recorrente:false,visita:true},
+      {id:'t3',title:'Conferir caixa d\'água',area:'a2',categoria:'manutenção',prioridade:'normal',status:'pendente',date:todayISO(),recorrente:true,visita:true},
+      {id:'t4',title:'Limpar área da piscina',area:'a2',categoria:'limpeza',prioridade:'normal',status:'pendente',date:addDays(2),recorrente:false,visita:false},
+      {id:'t5',title:'Comprar arame',area:'a3',categoria:'compra',prioridade:'baixa',status:'pendente',date:addDays(-2),recorrente:false,visita:true},
+    ],
+    culturas:[
+      {id:'c1',nome:'Amora-preta',variedade:'',area:'a3',categoria:'fruta',finalidade:'venda',status:'ativa',plantio:'',obs:''},
+      {id:'c2',nome:'Amoreira',variedade:'',area:'a3',categoria:'fruta',finalidade:'produção',status:'ativa',plantio:'',obs:''},
+      {id:'c3',nome:'Banana',variedade:'',area:'a3',categoria:'fruta',finalidade:'consumo próprio',status:'ativa',plantio:'',obs:''},
+      {id:'c4',nome:'Mandioca',variedade:'',area:'a3',categoria:'raiz',finalidade:'consumo próprio',status:'ativa',plantio:'',obs:''},
+      {id:'c5',nome:'Maracujá',variedade:'',area:'a3',categoria:'fruta',finalidade:'consumo próprio',status:'ativa',plantio:'',obs:''},
+      {id:'c6',nome:'Feijão-guandu',variedade:'',area:'a3',categoria:'grão',finalidade:'alimentação animal',status:'ativa',plantio:'',obs:''},
+    ],
+    projetos:[
+      {id:'pr1',nome:'Implantar linha comercial de amora',descricao:'Expandir a produção de amora-preta para venda',area:'a3',status:'em andamento',prioridade:'alta',inicio:todayISO(),prazo:addDays(60),orcamento:1500,custo:400,progresso:30,obs:''}
+    ],
+    sistemas:[
+      {id:'sy1',nome:'Sistema de irrigação',descricao:'Mangueiras, caixa d\'água e bomba funcionando',area:'a3',status:'ativo',obs:''},
+      {id:'sy2',nome:'Sistema de manutenção',descricao:'Roçada, cercas, ferramentas e limpeza geral',area:'a2',status:'ativo',obs:''}
+    ],
+    visitas:[],
+    producao:[
+      {id:'pd1',cicloId:'ci1',cultura:'c1',data:'2026-09-15',quantidade:2.5,unidade:'kg',destino:'venda',valor:50,obs:''}
+    ],
+    financeiro:{
+      receitas:[{id:'r1',data:'2026-09-15',descricao:'Venda de amora-preta',categoria:'venda de frutas',valor:50,obs:''}],
+      despesas:[{id:'d1',data:'2026-09-10',descricao:'Adubo',categoria:'insumos',valor:80,obs:''}]
+    },
+    estoque:[{id:'e1',produto:'Arame',categoria:'material',quantidade:2,unidade:'un',minimo:5,local:'Fundo',obs:''}],
+    compras:[{id:'cp1',produto:'Adubo',quantidade:1,prioridade:'normal',feito:false,obs:''}],
+    talhoes:[
+      {id:'th1',nome:'Talhão 1',areaM2:150,descricao:'Fundo — produção de amora',status:'Em produção',obs:''},
+      {id:'th2',nome:'Talhão 2',areaM2:100,descricao:'Fundo — banana e mandioca',status:'Em desenvolvimento',obs:''},
+      {id:'th3',nome:'Talhão 3',areaM2:80,descricao:'Área reservada para novo plantio',status:'Disponível',obs:''}
+    ],
+    ciclos:[
+      {id:'ci1',talhao:'th1',cultura:'c1',variedade:'',dataPlantio:'2026-06-01',areaUtilizada:150,qtdPlantas:40,estInicioProducao:'2026-09-01',estInicioColheita:'2026-09-10',estFimColheita:addDays(60),status:'Em colheita',obs:''},
+      {id:'ci2',talhao:'th2',cultura:'c3',variedade:'',dataPlantio:'2026-07-15',areaUtilizada:100,qtdPlantas:20,estInicioProducao:'',estInicioColheita:'',estFimColheita:addDays(150),status:'Desenvolvimento',obs:''}
+    ],
+    weatherCache:null
+  };
+}
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+let DB;
+try{ const raw=localStorage.getItem(KEY); DB = raw? JSON.parse(raw) : seed(); if(!raw) save(); }
+catch(e){ DB = seed(); }
+if(!DB.talhoes) DB.talhoes=[];
+if(!DB.ciclos) DB.ciclos=[];
+if(DB.weatherCache===undefined) DB.weatherCache=null;
+DB.properties.forEach(p=>{
+  if(p.latitude===undefined) p.latitude=null;
+  if(p.longitude===undefined) p.longitude=null;
+  if(p.cidade===undefined) p.cidade='';
+  if(p.estado===undefined) p.estado='';
+  if(p.pais===undefined) p.pais='';
+  if(p.timezone===undefined) p.timezone='America/Sao_Paulo';
+});
+save();
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){} }
+function areaName(id){ const a=DB.areas.find(x=>x.id===id); return a? a.name : '—'; }
+function culturaName(id){ const c=DB.culturas.find(x=>x.id===id); return c? c.nome : '—'; }
+function talhaoName(id){ const t=DB.talhoes.find(x=>x.id===id); return t? t.nome : '—'; }
+function prodInfo(p){
+  if(p.cicloId){ const c=DB.ciclos.find(x=>x.id===p.cicloId); if(c) return {cultura:culturaName(c.cultura),talhao:talhaoName(c.talhao)}; }
+  return {cultura:culturaName(p.cultura),talhao:'—'};
+}
+function brl(v){ return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2}); }
+const TALHAO_STATUS=['Disponível','Preparação','Plantado','Em desenvolvimento','Em produção','Em descanso','Encerrado'];
+const TALHAO_DOT={'Disponível':'#9aa79a','Preparação':'#B8722E','Plantado':'#5B8FB9','Em desenvolvimento':'#D9A441','Em produção':'#2F5233','Em descanso':'#8A8F87','Encerrado':'#6b6b6b'};
+const CICLO_STATUS=['Planejado','Plantado','Desenvolvimento','Floração','Frutificação','Em colheita','Encerrado'];
+const CICLO_EMOJI={'Planejado':'📋','Plantado':'🌱','Desenvolvimento':'🌿','Floração':'🌸','Frutificação':'🍇','Em colheita':'🧺','Encerrado':'✅'};
+function activeCiclo(talhaoId){ const cs=DB.ciclos.filter(c=>c.talhao===talhaoId && c.status!=='Encerrado'); return cs[cs.length-1]||null; }
+function fmtTemp(v){ return v==null? '—' : Math.round(v)+'°'; }
+function fmtMm(v){ return new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}).format(v||0)+' mm'; }
+function fmtPct(v){ return Math.round(v||0)+'%'; }
+function fmtWind(v){ return Math.round(v||0)+' km/h'; }
+function hhmm(iso){ return iso? iso.slice(11,16) : '—'; }
+function dayLabel(dateStr,idx){
+  if(idx===0) return 'Hoje';
+  if(idx===1) return 'Amanhã';
+  return new Date(dateStr+'T00:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+}
+// Camada de acesso à Open-Meteo (https://open-meteo.com/) — isolada para permitir trocar/intermediar
+// o provedor climático futuramente sem alterar as telas do AgroKods.
+const WeatherService = {
+  BASE:'https://api.open-meteo.com/v1/forecast',
+  buildUrl(lat,lon,timezone){
+    const params=new URLSearchParams({
+      latitude:lat, longitude:lon,
+      current:'temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m',
+      hourly:'temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,wind_speed_10m,weather_code',
+      daily:'temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,sunrise,sunset,et0_fao_evapotranspiration,weather_code',
+      timezone: timezone||'America/Sao_Paulo',
+      forecast_days:7
+    });
+    return `${this.BASE}?${params.toString()}`;
+  },
+  // Busca os dados atuais/horários/diários da Open-Meteo. Lança erro em falha de rede,
+  // HTTP não-ok ou resposta sem os blocos esperados — quem chama decide o que fazer (ver refreshClima).
+  async getWeatherData(lat,lon,timezone){
+    const res=await fetch(this.buildUrl(lat,lon,timezone));
+    if(!res.ok) throw new Error('http-'+res.status);
+    const json=await res.json();
+    if(!json||!json.current||!json.daily||!json.hourly) throw new Error('resposta-invalida');
+    return json;
+  },
+  // Converte o weather_code (WMO) da Open-Meteo em texto/ícone em português.
+  weatherCodeToText(code){
+    const map={0:'Céu limpo',1:'Principalmente limpo',2:'Parcialmente nublado',3:'Nublado',45:'Neblina',48:'Neblina',
+      51:'Chuvisco fraco',53:'Chuvisco',55:'Chuvisco forte',61:'Chuva fraca',63:'Chuva',65:'Chuva forte',
+      71:'Neve fraca',73:'Neve',75:'Neve forte',80:'Pancadas de chuva',81:'Pancadas de chuva',82:'Pancadas de chuva fortes',
+      95:'Trovoada',96:'Trovoada com granizo',99:'Trovoada com granizo'};
+    return map[code] || 'Condição indisponível';
+  },
+  weatherCodeToIcon(code){
+    if(code===0) return '☀️';
+    if(code===1||code===2) return '🌤️';
+    if(code===3) return '☁️';
+    if(code===45||code===48) return '🌫️';
+    if([51,53,55].includes(code)) return '🌦️';
+    if([61,63,65,80,81,82].includes(code)) return '🌧️';
+    if([71,73,75].includes(code)) return '❄️';
+    if([95,96,99].includes(code)) return '⛈️';
+    return '🌡️';
+  }
+};
+let climaLoading=false;
+let climaError=null;
+// Só consulta a API se não houver cache, se o cache tiver mais de 30min, ou se a localização mudou.
+function maybeRefreshClima(){
+  const prop=DB.properties[0];
+  if(!prop||prop.latitude==null||prop.longitude==null) return;
+  const cache=DB.weatherCache;
+  const stale=!cache || (Date.now()-cache.timestamp>1800000) || cache.latitude!==prop.latitude || cache.longitude!==prop.longitude;
+  if(stale) refreshClima();
+}
+function refreshClima(){
+  if(climaLoading) return;
+  const prop=DB.properties[0];
+  if(!prop||prop.latitude==null||prop.longitude==null) return;
+  climaLoading=true; climaError=null;
+  if(view==='clima') renderContent();
+  WeatherService.getWeatherData(prop.latitude,prop.longitude,prop.timezone).then(data=>{
+    DB.weatherCache={data,timestamp:Date.now(),latitude:prop.latitude,longitude:prop.longitude};
+    save(); climaLoading=false; climaError=null;
+    if(view==='clima'||view==='dashboard') renderContent();
+  }).catch(()=>{
+    climaLoading=false;
+    climaError='Não foi possível atualizar o clima. Verifique sua conexão com a internet e tente novamente.';
+    if(view==='clima') renderContent();
+  });
+}
+let view='dashboard';
+let propTab='propriedades';
+let prodTab='ciclos';
+let prodPeriodo='tudo';
+let finTab='receitas';
+let estTab='estoque';
+let prodSecOpen=true;
+const nav=document.getElementById('nav');
+function renderNav(){
+  nav.innerHTML = NAVS.map(n=>`<button class="navitem ${view===n.id?'active':''}" data-nav="${n.id}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${n.icon}"/></svg>
+    <span>${n.label}</span></button>`).join('');
+  nav.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{view=b.dataset.nav; renderNav(); renderContent();});
+}
+function fmtDate(d){ const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}); }
+function taskStatusTag(t){
+  if(t.status==='concluída') return '';
+  if(t.date<todayISO()) return '<span class="tag overdue">atrasada</span>';
+  if(t.date===todayISO()) return '<span class="tag">hoje</span>';
+  return `<span class="tag">${fmtDate(t.date)}</span>`;
+}
+function taskRow(t){
+  return `<div class="task-row ${t.status==='concluída'?'done':''}">
+    <button class="check ${t.status==='concluída'?'checked':''}" data-toggle="${t.id}"></button>
+    <span class="task-title">${t.title} <span style="color:var(--ink-soft);font-size:.8rem">· ${areaName(t.area)}</span></span>
+    ${taskStatusTag(t)}
+    <button class="btn del" data-del="${t.id}">✕</button>
+  </div>`;
+}
+function renderContent(){
+  const c=document.getElementById('content');
+  if(view==='dashboard') c.innerHTML=viewDashboard();
+  else if(view==='propriedade') c.innerHTML=viewPropriedade();
+  else if(view==='clima') c.innerHTML=viewClima();
+  else if(view==='tarefas') c.innerHTML=viewTarefas();
+  else if(view==='projetos') c.innerHTML=viewProjetos();
+  else if(view==='sistemas') c.innerHTML=viewSistemas();
+  else if(view==='visitas') c.innerHTML=viewVisitas();
+  else if(view==='producao') c.innerHTML=viewProducao();
+  else if(view==='financeiro') c.innerHTML=viewFinanceiro();
+  else if(view==='estoque') c.innerHTML=viewEstoque();
+  else c.innerHTML=viewEmpty(NAVS.find(n=>n.id===view).label);
+  bindContentEvents();
+  if(view==='clima'||view==='dashboard') maybeRefreshClima();
+}
+function viewEmpty(label){
+  return `<h1 class="section-title">${label}</h1>
+  <p class="section-sub">Este módulo ainda não foi construído — ele entra numa próxima etapa do desenvolvimento do AgroKods.</p>
+  <div class="card"><p class="empty">Nada aqui ainda. Sem dados fictícios — só o que realmente existe.</p></div>`;
+}
+function viewDashboard(){
+  const pending=DB.tasks.filter(t=>t.status!=='concluída');
+  const overdue=pending.filter(t=>t.date<todayISO());
+  const today=pending.filter(t=>t.date===todayISO());
+  const upcoming=pending.filter(t=>t.date>todayISO()).sort((a,b)=>a.date.localeCompare(b.date));
+  const visita=pending.filter(t=>t.visita);
+  return `
+  <h1 class="section-title">Dashboard</h1>
+  <p class="section-sub">Rancho Blackberry — o que precisa acontecer agora.</p>
+  <div class="visit-banner">
+    <p class="eyebrow">PRÓXIMA VISITA</p>
+    <h2>${visita.length? visita.length+' tarefa(s) planejada(s)' : 'Nenhuma tarefa marcada para a visita'}</h2>
+    <ul class="visit-list">${visita.length? visita.map(t=>`<li>${t.title}</li>`).join('') : '<li>Marque tarefas para a próxima visita na aba Tarefas</li>'}</ul>
+  </div>
+  <p class="section-sub" style="margin:-6px 0 12px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;font-size:.72rem">Gestão da propriedade</p>
+  <div class="grid">
+    <div class="card"><h3>Atrasadas (${overdue.length})</h3>${overdue.length? overdue.map(taskRow).join('') : '<p class="empty">Nenhuma tarefa atrasada.</p>'}</div>
+    <div class="card"><h3>Hoje (${today.length})</h3>${today.length? today.map(taskRow).join('') : '<p class="empty">Nada para hoje.</p>'}</div>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>Próximas</h3>${upcoming.length? upcoming.slice(0,5).map(taskRow).join('') : '<p class="empty">Sem tarefas futuras.</p>'}</div>
+    <div class="card"><h3>Financeiro</h3>${dashFinanceiro()}</div>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>Projetos em andamento</h3>${dashProjetos()}</div>
+    <div class="card"><h3>Sistemas</h3>${dashSistemas()}</div>
+  </div>
+  ${prodSection()}`;
+}
+function prodSection(){
+  const counts=talhaoCounts();
+  const header=`<div class="card-head" data-toggle-prodsec style="cursor:pointer">
+    <div><h3 style="margin-bottom:2px">🌱 Produção da propriedade</h3><p class="t2" style="margin:0">Visão rápida dos talhões, culturas e próximas colheitas.</p></div>
+    <span class="iconbtn">${prodSecOpen?'⌃ Recolher':'⌄ Expandir'}</span></div>`;
+  if(!prodSecOpen){
+    return `<div class="card" style="margin-top:22px">${header}
+    <p class="t2" style="margin:4px 0 0">${DB.talhoes.length} talhões · ${counts['Em produção']} em produção · ${counts['Em desenvolvimento']} em desenvolvimento · ${counts['Disponível']} disponíveis</p></div>`;
+  }
+  return `<div class="card" style="margin-top:22px">${header}
+  <div class="grid" style="margin-top:14px">
+    <div><h3>Talhões</h3>${talhoesSummaryHtml(counts)}<button class="btn ghost" data-goto-talhoes style="margin-top:8px">Ver talhões →</button></div>
+    <div><h3>Próximas colheitas</h3>${proximasColheitasHtml()}</div>
+  </div>
+  <div class="grid">
+    <div><h3>Produção por cultura</h3>${prodMiniChartHtml()}</div>
+    <div><h3>🌤️ Clima</h3>${dashClimaHtml()}</div>
+  </div></div>`;
+}
+function talhaoCounts(){
+  const counts={}; TALHAO_STATUS.forEach(s=>counts[s]=0);
+  DB.talhoes.forEach(t=>{ counts[t.status]=(counts[t.status]||0)+1; });
+  return counts;
+}
+function talhoesSummaryHtml(counts){
+  if(!DB.talhoes.length) return '<p class="empty">Nenhum talhão cadastrado ainda.</p>';
+  return TALHAO_STATUS.filter(s=>counts[s]>0).map(s=>`<div class="stat-line"><span class="dot" style="background:${TALHAO_DOT[s]}"></span>${counts[s]} ${s.toLowerCase()}</div>`).join('');
+}
+function proximasColheitasHtml(){
+  const today=todayISO();
+  const list=DB.ciclos.filter(c=>c.status!=='Encerrado' && c.estFimColheita && c.estFimColheita>=today)
+    .map(c=>({...c,dias:Math.max(0,Math.ceil((new Date(c.estFimColheita)-new Date(today))/86400000))}))
+    .sort((a,b)=>a.estFimColheita.localeCompare(b.estFimColheita)).slice(0,3);
+  if(!list.length) return '<p class="empty">Nenhuma colheita estimada no momento.</p>';
+  return list.map(c=>`<div class="list-row"><div class="meta"><div class="t1">${culturaName(c.cultura)} — ${talhaoName(c.talhao)}</div>
+    <div class="t2">Estimativa de colheita: ${fmtDate(c.estFimColheita)} · ${c.dias} dia(s)</div></div></div>`).join('');
+}
+function prodMiniChartHtml(){
+  const byCultura={};
+  DB.producao.forEach(p=>{ const n=prodInfo(p).cultura; byCultura[n]=(byCultura[n]||0)+Number(p.quantidade||0); });
+  const entries=Object.entries(byCultura).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if(!entries.length) return '<p class="empty">Registre sua primeira colheita para acompanhar a produção.</p>';
+  const max=Math.max(...entries.map(e=>e[1]));
+  return entries.map(([n,v])=>`<div class="stat-line"><span style="width:60px;flex-shrink:0">${n}</span><div class="mini-bar-track"><div class="mini-bar" style="width:${Math.max(6,v/max*100)}%"></div></div></div>`).join('');
+}
+function dashClimaHtml(){
+  const prop=DB.properties[0];
+  if(!prop||prop.latitude==null||prop.longitude==null) return '<p class="empty">Configure a localização da propriedade (aba Propriedade) para ver o clima.</p>';
+  const cache=DB.weatherCache;
+  if(!cache) return `<p class="empty">${climaError||'Carregando dados climáticos...'}</p>`;
+  const cur=cache.data.current;
+  const local=[prop.cidade,prop.estado].filter(Boolean).join(' - ');
+  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    <span style="font-size:1.6rem">${WeatherService.weatherCodeToIcon(cur.weather_code)}</span>
+    <div><div style="font-weight:700;font-size:1.1rem">${fmtTemp(cur.temperature_2m)}C</div><div class="t2">${WeatherService.weatherCodeToText(cur.weather_code)}${local?' · '+local:''}</div></div>
+  </div>
+  <div class="t2">💧 ${fmtPct(cur.relative_humidity_2m)} · 🌧️ ${fmtMm(cur.precipitation)}</div>
+  <button class="btn ghost" data-goto-clima style="margin-top:8px">Ver previsão →</button>`;
+}
+function dashFinanceiro(){
+  const rec=DB.financeiro.receitas.reduce((s,x)=>s+Number(x.valor||0),0);
+  const desp=DB.financeiro.despesas.reduce((s,x)=>s+Number(x.valor||0),0);
+  return `<div class="list-row"><div class="meta t1">Receitas</div><div class="t1">${brl(rec)}</div></div>
+  <div class="list-row"><div class="meta t1">Despesas</div><div class="t1">${brl(desp)}</div></div>
+  <div class="list-row"><div class="meta t1">Saldo</div><div class="t1" style="color:${rec-desp>=0?'var(--forest)':'var(--brick)'}">${brl(rec-desp)}</div></div>`;
+}
+function dashProjetos(){
+  const em=DB.projetos.filter(p=>p.status==='em andamento');
+  if(!em.length) return '<p class="empty">Nenhum projeto em andamento.</p>';
+  return em.map(p=>`<div class="list-row"><div class="meta"><div class="t1">${p.nome}</div><div class="t2">${p.progresso||0}% concluído</div></div></div>`).join('');
+}
+function dashSistemas(){
+  if(!DB.sistemas.length) return '<p class="empty">Nenhum sistema cadastrado.</p>';
+  return DB.sistemas.map(s=>`<div class="list-row"><div class="meta"><div class="t1">${s.nome}</div><div class="t2">${areaName(s.area)} · ${s.status}</div></div></div>`).join('');
+}
+const TABS=[{id:'propriedades',label:'Propriedades'},{id:'areas',label:'Áreas'},{id:'talhoes',label:'Talhões'},{id:'culturas',label:'Plantas e Culturas'}];
+function viewPropriedade(){
+  const tabsHtml=`<div class="tabs">${TABS.map(t=>`<button class="tab ${propTab===t.id?'active':''}" data-tab="${t.id}">${t.label}</button>`).join('')}</div>`;
+  let body='';
+  if(propTab==='propriedades') body=viewProperties();
+  else if(propTab==='areas') body=viewAreas();
+  else if(propTab==='talhoes') body=viewTalhoes();
+  else body=viewCulturas();
+  return `<h1 class="section-title">Propriedade</h1>
+  <p class="section-sub">Rancho Blackberry — estrutura da propriedade.</p>
+  ${tabsHtml}${body}`;
+}
+function viewProperties(){
+  const rows=DB.properties.map(p=>`<div class="list-row">
+    <div class="meta"><div class="t1">${p.name}</div><div class="t2">${p.area} · ${p.purpose||'—'}</div></div>
+    <button class="iconbtn" data-edit-prop="${p.id}">✎</button>
+    <button class="iconbtn" data-del-prop="${p.id}">✕</button>
+  </div>`).join('');
+  const prop=DB.properties[0];
+  const locHtml=prop? `<div class="card" style="margin-top:16px">
+    <h3>Localização para o clima</h3>
+    <div class="row2"><div class="field"><label>Cidade</label><input id="loc-cidade" value="${(prop.cidade||'').replace(/"/g,'&quot;')}"></div>
+    <div class="field"><label>Estado</label><input id="loc-estado" value="${prop.estado||''}"></div></div>
+    <div class="row2"><div class="field"><label>País</label><input id="loc-pais" value="${prop.pais||''}"></div>
+    <div class="field"><label>Fuso horário</label><input id="loc-tz" value="${prop.timezone||'America/Sao_Paulo'}"></div></div>
+    <div class="row2"><div class="field"><label>Latitude</label><input type="number" step="0.0001" id="loc-lat" value="${prop.latitude??''}" placeholder="Ex: -21.9300"></div>
+    <div class="field"><label>Longitude</label><input type="number" step="0.0001" id="loc-lon" value="${prop.longitude??''}" placeholder="Ex: -50.5100"></div></div>
+    <p class="empty" style="margin:-4px 0 10px">Informe a latitude e a longitude aproximadas da propriedade para ativar o módulo de Clima.</p>
+    <button class="btn" data-save-loc id="loc-save-anchor">Salvar localização</button>
+  </div>` : '';
+  return `<div class="card"><div class="card-head"><h3>Minhas Propriedades</h3><button class="btn ghost" data-add-prop>+ Nova propriedade</button></div>${rows||'<p class="empty">Nenhuma propriedade cadastrada.</p>'}</div>${locHtml}`;
+}
+function viewAreas(){
+  const rows=DB.areas.map(a=>`<div class="area-card">
+    <div class="row-actions"><button class="iconbtn" data-edit-area="${a.id}">✎</button><button class="iconbtn" data-del-area="${a.id}">✕</button></div>
+    <h4>${a.name}</h4><p>${a.uso||'—'}</p></div>`).join('');
+  return `<div class="card"><div class="card-head"><h3>Áreas</h3><button class="btn ghost" data-add-area>+ Nova área</button></div>
+  <div class="areas">${rows||'<p class="empty">Nenhuma área cadastrada.</p>'}</div></div>`;
+}
+function viewCulturas(){
+  const rows=DB.culturas.map(c=>`<div class="list-row">
+    <div class="meta"><div class="t1">${c.nome}${c.variedade?' · '+c.variedade:''}</div><div class="t2">${areaName(c.area)} · ${c.categoria} · ${c.finalidade} · <span class="tag">${c.status}</span></div></div>
+    <button class="iconbtn" data-edit-cultura="${c.id}">✎</button>
+    <button class="iconbtn" data-del-cultura="${c.id}">✕</button>
+  </div>`).join('');
+  return `<div class="card"><div class="card-head"><h3>Plantas e Culturas</h3><button class="btn ghost" data-add-cultura>+ Nova cultura</button></div>${rows||'<p class="empty">Nenhuma cultura cadastrada.</p>'}</div>`;
+}
+function viewTalhoes(){
+  const rows=DB.talhoes.map(t=>{
+    const ac=activeCiclo(t.id);
+    return `<div class="list-row">
+    <span class="dot" style="background:${TALHAO_DOT[t.status]||'#999'}"></span>
+    <div class="meta"><div class="t1">${t.nome} <span class="t2">· ${t.areaM2||0} m²</span></div>
+    <div class="t2">${t.descricao||''}${ac?' · cultura atual: '+culturaName(ac.cultura):' · sem ciclo ativo'} · <span class="tag">${t.status}</span></div></div>
+    <button class="iconbtn" data-edit-talhao="${t.id}">✎</button><button class="iconbtn" data-del-talhao="${t.id}">✕</button>
+  </div>`;
+  }).join('');
+  return `<div class="card"><div class="card-head"><h3>Talhões</h3><button class="btn ghost" data-add-talhao>+ Novo talhão</button></div>
+  ${rows||'<p class="empty">Nenhum talhão cadastrado ainda.</p>'}</div>
+  <p class="section-sub" style="margin-top:10px">A cultura de cada talhão é definida pelos Ciclos de produção, na aba Produção — um talhão pode mudar de cultura ao longo do tempo.</p>`;
+}
+function openTalhaoForm(id){
+  const t=id? DB.talhoes.find(x=>x.id===id) : {nome:'',areaM2:0,descricao:'',status:'Disponível',obs:''};
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>${id?'Editar talhão':'Novo talhão'}</h3>
+    <div class="field"><label>Nome / identificação</label><input id="th-nome" value="${t.nome.replace(/"/g,'&quot;')}" placeholder="Ex: Talhão 4"></div>
+    <div class="row2"><div class="field"><label>Área (m²)</label><input type="number" step="0.01" id="th-area" value="${t.areaM2||0}"></div>
+    <div class="field"><label>Status</label><select id="th-status">${TALHAO_STATUS.map(s=>`<option ${s===t.status?'selected':''}>${s}</option>`).join('')}</select></div></div>
+    <div class="field"><label>Descrição</label><input id="th-desc" value="${t.descricao||''}"></div>
+    <div class="field"><label>Observações</label><input id="th-obs" value="${t.obs||''}"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="th-cancel">Cancelar</button><button class="btn" id="th-save">Salvar</button></div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#th-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#th-save').onclick=()=>{
+    const nome=back.querySelector('#th-nome').value.trim(); if(!nome) return;
+    const vals={nome,areaM2:Number(back.querySelector('#th-area').value||0),status:back.querySelector('#th-status').value,
+      descricao:back.querySelector('#th-desc').value.trim(),obs:back.querySelector('#th-obs').value.trim()};
+    if(id){ Object.assign(t,vals); } else DB.talhoes.push(Object.assign({id:'th'+Date.now()},vals));
+    save(); back.remove(); renderContent();
+  };
+}
+function viewClima(){
+  const prop=DB.properties[0];
+  const local=[prop?.cidade,prop?.estado].filter(Boolean).join(' - ')||'—';
+  if(!prop||prop.latitude==null||prop.longitude==null){
+    return `<h1 class="section-title">Clima</h1><p class="section-sub">Condições climáticas e previsão para sua propriedade</p>
+    <div class="card"><p class="empty">Configure a latitude e a longitude da propriedade para ativar o módulo de Clima.</p>
+    <button class="btn ghost" data-goto-loc style="margin-top:8px">Configurar localização →</button></div>`;
+  }
+  const cache=DB.weatherCache;
+  if(!cache && climaLoading){
+    return `<h1 class="section-title">Clima</h1><p class="section-sub">Condições climáticas e previsão para sua propriedade</p>
+    <div class="card"><p class="empty">Carregando dados climáticos...</p></div>`;
+  }
+  if(!cache && climaError){
+    return `<h1 class="section-title">Clima</h1><p class="section-sub">Condições climáticas e previsão para sua propriedade</p>
+    <div class="card"><p class="empty">${climaError}</p><button class="btn ghost" data-refresh-clima style="margin-top:8px">Tentar novamente</button></div>`;
+  }
+  if(!cache) return `<h1 class="section-title">Clima</h1><p class="section-sub">Condições climáticas e previsão para sua propriedade</p><div class="card"><p class="empty">Carregando dados climáticos...</p></div>`;
+  const d=cache.data, cur=d.current, daily=d.daily;
+  const updated=new Date(cache.timestamp).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const updatedFull=new Date(cache.timestamp).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const days=daily.time.map((t,i)=>({date:t,idx:i,max:daily.temperature_2m_max[i],min:daily.temperature_2m_min[i],
+    rain:daily.precipitation_sum[i],prob:daily.precipitation_probability_max[i],code:daily.weather_code[i]}));
+  const hours=(()=>{ const now=new Date(); let idx=d.hourly.time.findIndex(t=>new Date(t)>=now); if(idx<0) idx=0;
+    return d.hourly.time.slice(idx,idx+12).map((t,i)=>({time:t,temp:d.hourly.temperature_2m[idx+i],prob:d.hourly.precipitation_probability[idx+i],code:d.hourly.weather_code[idx+i]})); })();
+  const alerts=climaAlertas(days);
+  return `<h1 class="section-title">Clima</h1><p class="section-sub">Condições climáticas e previsão para sua propriedade</p>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div><h3 style="margin-bottom:2px">${prop.name}</h3><p class="t2" style="margin:0">${local} · Atualizado às ${updated}${climaError?' · última atualização disponível':''}</p></div>
+    <button class="btn ghost" data-refresh-clima ${climaLoading?'disabled':''}>${climaLoading?'Atualizando...':'↻ Atualizar'}</button></div>
+    ${climaError?`<p class="empty" style="color:var(--brick)">${climaError}</p>`:''}
+    <div style="display:flex;align-items:center;gap:14px;margin:10px 0">
+      <span style="font-size:2.4rem">${WeatherService.weatherCodeToIcon(cur.weather_code)}</span>
+      <div><div style="font-size:1.8rem;font-weight:700;color:var(--forest-d)">${fmtTemp(cur.temperature_2m)}C</div><div class="t2">${WeatherService.weatherCodeToText(cur.weather_code)} · ${local}</div></div>
+    </div>
+    <div class="indic-grid">
+      <div class="indic-card"><div class="l">🌡️ Temperatura</div><div class="v">${fmtTemp(cur.temperature_2m)}</div></div>
+      <div class="indic-card"><div class="l">💧 Umidade</div><div class="v">${fmtPct(cur.relative_humidity_2m)}</div></div>
+      <div class="indic-card"><div class="l">🌧️ Chuva</div><div class="v">${fmtMm(cur.precipitation)}</div></div>
+      <div class="indic-card"><div class="l">💨 Vento</div><div class="v">${fmtWind(cur.wind_speed_10m)}</div></div>
+    </div>
+  </div>
+  ${alerts}
+  <div class="card" style="margin-bottom:16px"><h3>Previsão — 7 dias</h3>
+    <div class="hscroll">${days.map(x=>`<div class="day-card"><div class="t2">${dayLabel(x.date,x.idx)}</div><div style="font-size:1.3rem">${WeatherService.weatherCodeToIcon(x.code)}</div>
+      <div style="font-weight:700">${fmtTemp(x.max)}</div><div class="t2">${fmtTemp(x.min)}</div><div class="t2">${fmtPct(x.prob)}</div></div>`).join('')}</div>
+  </div>
+  <div class="card" style="margin-bottom:16px"><h3>Precipitação</h3>
+    ${(()=>{ const max=Math.max(1,...days.map(x=>x.rain||0)); return days.map(x=>`<div style="margin-bottom:8px">
+      <div class="stat-line"><span style="flex:1">${dayLabel(x.date,x.idx)}</span><span class="t2">${fmtMm(x.rain)} · prob. ${fmtPct(x.prob)}</span></div>
+      <div class="mini-bar-track"><div class="mini-bar" style="width:${Math.max(2,(x.rain||0)/max*100)}%"></div></div></div>`).join(''); })()}
+  </div>
+  <div class="grid">
+    <div class="card"><h3>Indicadores agrícolas</h3>
+      <p class="t2" style="margin:0 0 4px">ET₀ hoje</p><p style="font-size:1.3rem;font-weight:700;color:var(--forest-d);margin:0">${fmtMm(daily.et0_fao_evapotranspiration?.[0])}</p>
+      <p class="empty" style="margin:6px 0 0">Estimativa de água perdida por evapotranspiração.</p>
+    </div>
+    <div class="card"><h3>Sol</h3>
+      <div class="stat-line">☀️ Nascer do sol <span style="margin-left:auto;font-weight:600">${hhmm(daily.sunrise?.[0])}</span></div>
+      <div class="stat-line">🌇 Pôr do sol <span style="margin-left:auto;font-weight:600">${hhmm(daily.sunset?.[0])}</span></div>
+    </div>
+  </div>
+  <div class="card"><h3>Próximas horas</h3>
+    <div class="hscroll">${hours.map(h=>`<div class="hour-card"><div>${hhmm(h.time)}</div><div style="font-size:1.1rem">${WeatherService.weatherCodeToIcon(h.code)}</div><div style="font-weight:600">${fmtTemp(h.temp)}</div><div class="t2">${fmtPct(h.prob)}</div></div>`).join('')}</div>
+  </div>
+  <p class="empty" style="margin-top:10px">Última atualização: ${updatedFull} · dados da Open-Meteo</p>`;
+}
+function climaAlertas(days){
+  const next3=days.slice(0,3);
+  const totalRain=next3.reduce((s,x)=>s+(x.rain||0),0);
+  const maxTemp=Math.max(...next3.map(x=>x.max||0));
+  const alerts=[];
+  if(totalRain>10) alerts.push({icon:'🌧️',title:'Chuva prevista',text:'Há previsão de chuva significativa nos próximos dias.'});
+  else if(totalRain<1) alerts.push({icon:'☀️',title:'Período seco',text:'Não há precipitação relevante prevista nos próximos dias.'});
+  if(maxTemp>=35) alerts.push({icon:'🌡️',title:'Atenção à temperatura',text:'Temperaturas elevadas previstas para os próximos dias.'});
+  if(!alerts.length) return '';
+  return alerts.map(a=>`<div class="card" style="margin-bottom:12px;border-left:4px solid var(--ochre)"><strong>${a.icon} ${a.title}</strong><p class="t2" style="margin:4px 0 0">${a.text}</p></div>`).join('');
+}
+function viewTarefas(){
+  const sorted=[...DB.tasks].sort((a,b)=>(a.status==='concluída')-(b.status==='concluída') || a.date.localeCompare(b.date));
+  return `<h1 class="section-title">Tarefas</h1>
+  <p class="section-sub">Todas as tarefas do Rancho Blackberry.</p>
+  <div class="card">${sorted.length? sorted.map(taskRow).join('') : '<p class="empty">Nenhuma tarefa ainda. Toque em + para criar.</p>'}</div>`;
+}
+const PROJ_STATUS=['planejado','em andamento','pausado','concluído','cancelado'];
+function viewProjetos(){
+  const rows=DB.projetos.map(p=>`<div class="card" style="margin-bottom:12px">
+    <div class="card-head"><h3>${p.nome}</h3><div><button class="iconbtn" data-edit-proj="${p.id}">✎</button><button class="iconbtn" data-del-proj="${p.id}">✕</button></div></div>
+    <p class="t2" style="margin:0 0 8px">${p.descricao||''}</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+      <span class="tag">${p.status}</span><span class="tag">${areaName(p.area)}</span><span class="tag">prioridade ${p.prioridade}</span>
+      ${p.prazo?`<span class="tag">prazo ${fmtDate(p.prazo)}</span>`:''}
+    </div>
+    <div style="height:8px;background:var(--bg);border-radius:6px;overflow:hidden;margin-bottom:6px"><div style="height:100%;width:${p.progresso||0}%;background:var(--forest)"></div></div>
+    <div class="t2">Progresso: ${p.progresso||0}% · Orçamento: ${brl(p.orcamento)} · Custo realizado: ${brl(p.custo)}</div>
+  </div>`).join('');
+  return `<h1 class="section-title">Projetos</h1><p class="section-sub">Com início, desenvolvimento e conclusão.</p>
+  <div style="margin-bottom:14px"><button class="btn ghost" data-add-proj>+ Novo projeto</button></div>
+  ${rows||'<div class="card"><p class="empty">Nenhum projeto cadastrado.</p></div>'}`;
+}
+function openProjetoForm(id){
+  const p=id? DB.projetos.find(x=>x.id===id) : {nome:'',descricao:'',area:DB.areas[0]?.id,status:'planejado',prioridade:'normal',inicio:todayISO(),prazo:'',orcamento:0,custo:0,progresso:0,obs:''};
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>${id?'Editar projeto':'Novo projeto'}</h3>
+    <div class="field"><label>Nome</label><input id="pj-nome" value="${p.nome.replace(/"/g,'&quot;')}" placeholder="Ex: Construir galinheiro"></div>
+    <div class="field"><label>Descrição</label><input id="pj-desc" value="${p.descricao||''}"></div>
+    <div class="row2"><div class="field"><label>Área</label><select id="pj-area">${DB.areas.map(a=>`<option value="${a.id}" ${a.id===p.area?'selected':''}>${a.name}</option>`).join('')}</select></div>
+    <div class="field"><label>Status</label><select id="pj-status">${PROJ_STATUS.map(s=>`<option ${s===p.status?'selected':''}>${s}</option>`).join('')}</select></div></div>
+    <div class="row2"><div class="field"><label>Prioridade</label><select id="pj-prio"><option value="baixa" ${p.prioridade==='baixa'?'selected':''}>Baixa</option><option value="normal" ${p.prioridade==='normal'?'selected':''}>Normal</option><option value="alta" ${p.prioridade==='alta'?'selected':''}>Alta</option></select></div>
+    <div class="field"><label>Progresso (%)</label><input type="number" min="0" max="100" id="pj-prog" value="${p.progresso||0}"></div></div>
+    <div class="row2"><div class="field"><label>Início</label><input type="date" id="pj-inicio" value="${p.inicio||''}"></div>
+    <div class="field"><label>Prazo</label><input type="date" id="pj-prazo" value="${p.prazo||''}"></div></div>
+    <div class="row2"><div class="field"><label>Orçamento (R$)</label><input type="number" step="0.01" id="pj-orc" value="${p.orcamento||0}"></div>
+    <div class="field"><label>Custo realizado (R$)</label><input type="number" step="0.01" id="pj-custo" value="${p.custo||0}"></div></div>
+    <div class="field"><label>Observações</label><input id="pj-obs" value="${p.obs||''}"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="pj-cancel">Cancelar</button><button class="btn" id="pj-save">Salvar</button></div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#pj-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#pj-save').onclick=()=>{
+    const nome=back.querySelector('#pj-nome').value.trim(); if(!nome) return;
+    const vals={nome,descricao:back.querySelector('#pj-desc').value.trim(),area:back.querySelector('#pj-area').value,
+      status:back.querySelector('#pj-status').value,prioridade:back.querySelector('#pj-prio').value,
+      progresso:Number(back.querySelector('#pj-prog').value||0),inicio:back.querySelector('#pj-inicio').value,
+      prazo:back.querySelector('#pj-prazo').value,orcamento:Number(back.querySelector('#pj-orc').value||0),
+      custo:Number(back.querySelector('#pj-custo').value||0),obs:back.querySelector('#pj-obs').value.trim()};
+    if(id){ Object.assign(p,vals); } else DB.projetos.push(Object.assign({id:'pr'+Date.now()},vals));
+    save(); back.remove(); renderContent();
+  };
+}
+function viewSistemas(){
+  const rows=DB.sistemas.map(s=>`<div class="list-row"><div class="meta"><div class="t1">${s.nome}</div><div class="t2">${s.descricao||''} · ${areaName(s.area)} · <span class="tag">${s.status}</span></div></div>
+    <button class="iconbtn" data-edit-sist="${s.id}">✎</button><button class="iconbtn" data-del-sist="${s.id}">✕</button></div>`).join('');
+  return `<h1 class="section-title">Sistemas</h1><p class="section-sub">Atividades contínuas da propriedade.</p>
+  <div class="card"><div class="card-head"><h3>Sistemas</h3><button class="btn ghost" data-add-sist>+ Novo sistema</button></div>
+  ${rows||'<p class="empty">Nenhum sistema cadastrado.</p>'}</div>`;
+}
+function openSistemaForm(id){
+  const s=id? DB.sistemas.find(x=>x.id===id) : {nome:'',descricao:'',area:DB.areas[0]?.id,status:'ativo',obs:''};
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>${id?'Editar sistema':'Novo sistema'}</h3>
+    <div class="field"><label>Nome</label><input id="sy-nome" value="${s.nome.replace(/"/g,'&quot;')}" placeholder="Ex: Sistema de irrigação"></div>
+    <div class="field"><label>Descrição</label><input id="sy-desc" value="${s.descricao||''}"></div>
+    <div class="row2"><div class="field"><label>Área</label><select id="sy-area">${DB.areas.map(a=>`<option value="${a.id}" ${a.id===s.area?'selected':''}>${a.name}</option>`).join('')}</select></div>
+    <div class="field"><label>Status</label><select id="sy-status"><option value="ativo" ${s.status==='ativo'?'selected':''}>Ativo</option><option value="inativo" ${s.status==='inativo'?'selected':''}>Inativo</option></select></div></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="sy-cancel">Cancelar</button><button class="btn" id="sy-save">Salvar</button></div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#sy-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#sy-save').onclick=()=>{
+    const nome=back.querySelector('#sy-nome').value.trim(); if(!nome) return;
+    const vals={nome,descricao:back.querySelector('#sy-desc').value.trim(),area:back.querySelector('#sy-area').value,status:back.querySelector('#sy-status').value};
+    if(id){ Object.assign(s,vals); } else DB.sistemas.push(Object.assign({id:'sy'+Date.now()},vals));
+    save(); back.remove(); renderContent();
+  };
+}
+function viewVisitas(){
+  const rows=[...DB.visitas].sort((a,b)=>b.data.localeCompare(a.data)).map(v=>`<div class="card" style="margin-bottom:12px">
+    <div class="card-head"><h3>${fmtDate(v.data)}</h3><button class="iconbtn" data-del-visita="${v.id}">✕</button></div>
+    <div class="t2">Entrada ${v.entrada||'—'} · Saída ${v.saida||'—'}</div>
+    <p class="t2" style="margin:8px 0 0">${v.tarefasConcluidas.length} tarefa(s) concluída(s) nesta visita</p>
+    ${v.obs?`<p class="t2" style="margin:4px 0 0">${v.obs}</p>`:''}
+  </div>`).join('');
+  return `<h1 class="section-title">Visitas</h1><p class="section-sub">Registre o que aconteceu em cada visita à propriedade.</p>
+  <div style="margin-bottom:14px"><button class="btn ghost" data-add-visita>+ Registrar visita</button></div>
+  ${rows||'<div class="card"><p class="empty">Nenhuma visita registrada ainda.</p></div>'}`;
+}
+function openVisitaForm(){
+  const pendentes=DB.tasks.filter(t=>t.status!=='concluída');
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>Registrar visita</h3>
+    <div class="row2"><div class="field"><label>Data</label><input type="date" id="v-data" value="${todayISO()}"></div>
+    <div class="field"><label>Entrada</label><input type="time" id="v-entrada"></div></div>
+    <div class="field"><label>Saída</label><input type="time" id="v-saida"></div>
+    <div class="field"><label>Tarefas realizadas nesta visita</label>
+    ${pendentes.length? pendentes.map(t=>`<label style="display:flex;gap:8px;align-items:center;font-size:.88rem;padding:4px 0"><input type="checkbox" class="v-task" value="${t.id}"> ${t.title}</label>`).join('') : '<p class="empty">Nenhuma tarefa pendente.</p>'}
+    </div>
+    <div class="field"><label>Observações / problemas encontrados</label><input id="v-obs"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="v-cancel">Cancelar</button><button class="btn" id="v-save">Salvar visita</button></div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#v-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#v-save').onclick=()=>{
+    const done=[...back.querySelectorAll('.v-task:checked')].map(c=>c.value);
+    done.forEach(id=>{ const t=DB.tasks.find(x=>x.id===id); if(t) t.status='concluída'; });
+    DB.visitas.push({id:'vi'+Date.now(),data:back.querySelector('#v-data').value,entrada:back.querySelector('#v-entrada').value,
+      saida:back.querySelector('#v-saida').value,tarefasConcluidas:done,obs:back.querySelector('#v-obs').value.trim()});
+    save(); back.remove(); renderContent();
+  };
+}
+const PROD_DESTINOS=['consumo próprio','venda','doação','perda','processamento'];
+const PROD_PERIODOS=[{id:'tudo',label:'Tudo'},{id:'hoje',label:'Hoje'},{id:'semana',label:'Semana'},{id:'mes',label:'Mês'},{id:'ano',label:'Ano'}];
+function filterPeriodo(arr){
+  if(prodPeriodo==='tudo') return arr;
+  const today=new Date(todayISO());
+  return arr.filter(p=>{
+    const d=new Date(p.data);
+    if(prodPeriodo==='hoje') return p.data===todayISO();
+    if(prodPeriodo==='semana'){ const diff=(today-d)/86400000; return diff>=0 && diff<7; }
+    if(prodPeriodo==='mes') return d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth();
+    if(prodPeriodo==='ano') return d.getFullYear()===today.getFullYear();
+    return true;
+  });
+}
+function viewProducao(){
+  const tabs=`<div class="tabs"><button class="tab ${prodTab==='ciclos'?'active':''}" data-ptab="ciclos">Ciclos de produção</button><button class="tab ${prodTab==='registros'?'active':''}" data-ptab="registros">Registros de colheita</button><button class="tab ${prodTab==='resumo'?'active':''}" data-ptab="resumo">Resumo</button></div>`;
+  let body='';
+  if(prodTab==='ciclos') body=viewCiclos();
+  else if(prodTab==='registros'){
+    const rows=[...DB.producao].sort((a,b)=>b.data.localeCompare(a.data)).map(p=>{ const info=prodInfo(p);
+      return `<div class="list-row"><div class="meta"><div class="t1">${info.cultura} — ${p.quantidade} ${p.unidade}</div><div class="t2">${info.talhao!=='—'?info.talhao+' · ':''}${fmtDate(p.data)} · ${p.destino} · ${brl(p.valor)}</div></div>
+      <button class="iconbtn" data-edit-prod="${p.id}">✎</button><button class="iconbtn" data-del-prod="${p.id}">✕</button></div>`; }).join('');
+    body=`<div class="card"><div class="card-head"><h3>Registros de colheita</h3><button class="btn ghost" data-add-prod>+ Novo registro</button></div>${rows||'<p class="empty">Nenhuma colheita registrada.</p>'}</div>`;
+  } else {
+    const periodoBar=`<div class="tabs" style="margin-bottom:14px">${PROD_PERIODOS.map(pr=>`<button class="tab ${prodPeriodo===pr.id?'active':''}" data-periodo="${pr.id}">${pr.label}</button>`).join('')}</div>`;
+    const filtered=filterPeriodo(DB.producao);
+    const byCultura={};
+    filtered.forEach(p=>{ const n=prodInfo(p).cultura; byCultura[n]=byCultura[n]||{qtd:0,unidade:p.unidade,valor:0}; byCultura[n].qtd+=Number(p.quantidade); byCultura[n].valor+=Number(p.valor||0); });
+    const entries=Object.entries(byCultura).sort((a,b)=>b[1].qtd-a[1].qtd);
+    const max=entries.length? Math.max(...entries.map(([,v])=>v.qtd)) : 0;
+    const rows=entries.map(([n,v])=>`<div style="margin-bottom:12px">
+      <div class="stat-line"><span style="flex:1;font-weight:600">${n}</span><span class="t2">${v.qtd} ${v.unidade} · ${brl(v.valor)}</span></div>
+      <div class="mini-bar-track"><div class="mini-bar" style="width:${Math.max(4,v.qtd/max*100)}%"></div></div>
+    </div>`).join('');
+    body=`<div class="card"><h3>Produção por cultura</h3>${periodoBar}${rows||'<p class="empty">Registre sua primeira colheita para acompanhar a produção.</p>'}</div>`;
+  }
+  return `<h1 class="section-title">Produção</h1><p class="section-sub">Do talhão à colheita: acompanhe os ciclos de produção da propriedade.</p>${tabs}${body}`;
+}
+function viewCiclos(){
+  const rows=DB.ciclos.map(c=>`<div class="card" style="margin-bottom:12px">
+    <div class="card-head"><h3>${talhaoName(c.talhao)} — ${culturaName(c.cultura)}${c.variedade?' ('+c.variedade+')':''}</h3><div><button class="iconbtn" data-edit-ciclo="${c.id}">✎</button><button class="iconbtn" data-del-ciclo="${c.id}">✕</button></div></div>
+    <div class="t2" style="margin-bottom:6px">${CICLO_STATUS.map(s=>CICLO_EMOJI[s]).join(' → ')}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"><span class="tag">${CICLO_EMOJI[c.status]||''} ${c.status}</span>${c.dataPlantio?`<span class="tag">plantio ${fmtDate(c.dataPlantio)}</span>`:''}${c.estInicioColheita?`<span class="tag">colheita est. ${fmtDate(c.estInicioColheita)}${c.estFimColheita?' → '+fmtDate(c.estFimColheita):''}</span>`:''}</div>
+    ${c.obs?`<p class="t2" style="margin:0">${c.obs}</p>`:''}
+  </div>`).join('');
+  return `<div style="margin-bottom:14px"><button class="btn ghost" data-add-ciclo>+ Novo ciclo de produção</button></div>
+  ${rows||`<div class="card"><p class="empty">${DB.talhoes.length? 'Nenhum ciclo de produção cadastrado ainda.' : 'Cadastre um talhão primeiro (aba Propriedade → Talhões).'}</p></div>`}`;
+}
+function openCicloForm(id){
+  if(!id && !DB.talhoes.length){
+    const back=document.createElement('div'); back.className='modal-back';
+    back.innerHTML=`<div class="modal"><h3>Cadastre um talhão primeiro</h3><p class="t2">Um ciclo de produção precisa estar ligado a um talhão. Cadastre um talhão na aba Propriedade antes de criar o ciclo.</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn" id="ci-ok">Entendi</button></div></div>`;
+    document.body.appendChild(back);
+    back.querySelector('#ci-ok').onclick=()=>back.remove();
+    back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+    return;
+  }
+  const c=id? DB.ciclos.find(x=>x.id===id) : {talhao:DB.talhoes[0]?.id,cultura:DB.culturas[0]?.id,variedade:'',dataPlantio:todayISO(),areaUtilizada:0,qtdPlantas:0,estInicioProducao:'',estInicioColheita:'',estFimColheita:'',status:'Planejado',obs:''};
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>${id?'Editar ciclo de produção':'Novo ciclo de produção'}</h3>
+    <div class="row2"><div class="field"><label>Talhão</label><select id="ci-talhao">${DB.talhoes.map(t=>`<option value="${t.id}" ${t.id===c.talhao?'selected':''}>${t.nome}</option>`).join('')}</select></div>
+    <div class="field"><label>Cultura</label><select id="ci-cultura">${DB.culturas.map(x=>`<option value="${x.id}" ${x.id===c.cultura?'selected':''}>${x.nome}</option>`).join('')}</select></div></div>
+    <div class="row2"><div class="field"><label>Variedade</label><input id="ci-var" value="${c.variedade||''}"></div>
+    <div class="field"><label>Status do ciclo</label><select id="ci-status">${CICLO_STATUS.map(s=>`<option ${s===c.status?'selected':''}>${s}</option>`).join('')}</select></div></div>
+    <div class="row2"><div class="field"><label>Data de plantio</label><input type="date" id="ci-plantio" value="${c.dataPlantio||''}"></div>
+    <div class="field"><label>Qtd. de plantas</label><input type="number" id="ci-qtd" value="${c.qtdPlantas||0}"></div></div>
+    <div class="field"><label>Área utilizada (m²)</label><input type="number" step="0.01" id="ci-areautil" value="${c.areaUtilizada||0}"></div>
+    <div class="row2"><div class="field"><label>Est. início da produção</label><input type="date" id="ci-estprod" value="${c.estInicioProducao||''}"></div>
+    <div class="field"><label>Est. início da colheita</label><input type="date" id="ci-estini" value="${c.estInicioColheita||''}"></div></div>
+    <div class="field"><label>Est. fim da colheita</label><input type="date" id="ci-estfim" value="${c.estFimColheita||''}"></div>
+    <p class="empty" style="margin:-4px 0 10px">Datas de colheita são estimativas cadastradas por você — não uma previsão automática.</p>
+    <div class="field"><label>Observações</label><input id="ci-obs" value="${c.obs||''}"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="ci-cancel">Cancelar</button><button class="btn" id="ci-save">Salvar</button></div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#ci-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#ci-save').onclick=()=>{
+    const vals={talhao:back.querySelector('#ci-talhao').value,cultura:back.querySelector('#ci-cultura').value,
+      variedade:back.querySelector('#ci-var').value.trim(),status:back.querySelector('#ci-status').value,
+      dataPlantio:back.querySelector('#ci-plantio').value,qtdPlantas:Number(back.querySelector('#ci-qtd').value||0),
+      areaUtilizada:Number(back.querySelector('#ci-areautil').value||0),estInicioProducao:back.querySelector('#ci-estprod').value,
+      estInicioColheita:back.querySelector('#ci-estini').value,estFimColheita:back.querySelector('#ci-estfim').value,
+      obs:back.querySelector('#ci-obs').value.trim()};
+    if(id){ Object.assign(c,vals); } else DB.ciclos.push(Object.assign({id:'ci'+Date.now()},vals));
+    save(); back.remove(); renderContent();
+  };
+}
+function openProducaoForm(id){
+  if(!id && !DB.ciclos.length){
+    const back=document.createElement('div'); back.className='modal-back';
+    back.innerHTML=`<div class="modal"><h3>Cadastre um ciclo de produção primeiro</h3><p class="t2">Toda colheita precisa estar ligada a um ciclo de produção (talhão + cultura).</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn" id="pd-ok">Ir para Ciclos</button></div></div>`;
+    document.body.appendChild(back);
+    back.querySelector('#pd-ok').onclick=()=>{ back.remove(); prodTab='ciclos'; renderContent(); };
+    back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+    return;
+  }
+  const p=id? DB.producao.find(x=>x.id===id) : {cicloId:DB.ciclos[0]?.id,data:todayISO(),quantidade:0,unidade:'kg',destino:'consumo próprio',valor:0,obs:''};
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>${id?'Editar registro':'Novo registro de colheita'}</h3>
+    <div class="field"><label>Ciclo de produção</label><select id="pd-ciclo">${DB.ciclos.map(c=>`<option value="${c.id}" ${c.id===p.cicloId?'selected':''}>${talhaoName(c.talhao)} · ${culturaName(c.cultura)} (${c.status})</option>`).join('')}</select></div>
+    <div class="row2"><div class="field"><label>Data</label><input type="date" id="pd-data" value="${p.data}"></div>
+    <div class="field"><label>Destino</label><select id="pd-dest">${PROD_DESTINOS.map(d=>`<option ${d===p.destino?'selected':''}>${d}</option>`).join('')}</select></div></div>
+    <div class="row2"><div class="field"><label>Quantidade</label><input type="number" step="0.01" id="pd-qtd" value="${p.quantidade}"></div>
+    <div class="field"><label>Unidade</label><input id="pd-un" value="${p.unidade}" placeholder="kg, un, L..."></div></div>
+    <div class="field"><label>Valor (R$)</label><input type="number" step="0.01" id="pd-valor" value="${p.valor||0}"></div>
+    <div class="field"><label>Observações</label><input id="pd-obs" value="${p.obs||''}"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="pd-cancel">Cancelar</button><button class="btn" id="pd-save">Salvar</button></div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#pd-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#pd-save').onclick=()=>{
+    const vals={cicloId:back.querySelector('#pd-ciclo').value,data:back.querySelector('#pd-data').value,
+      quantidade:Number(back.querySelector('#pd-qtd').value||0),unidade:back.querySelector('#pd-un').value.trim()||'un',
+      destino:back.querySelector('#pd-dest').value,valor:Number(back.querySelector('#pd-valor').value||0),obs:back.querySelector('#pd-obs').value.trim()};
+    if(id){ Object.assign(p,vals); } else DB.producao.push(Object.assign({id:'pd'+Date.now()},vals));
+    save(); back.remove(); renderContent();
+  };
+}
+const REC_CATS=['venda de frutas','venda de animais','venda de produtos','outras receitas'];
+const DESP_CATS=['sementes','mudas','adubo','ferramentas','combustível','materiais','manutenção','construção','alimentação animal','outros'];
+function viewFinanceiro(){
+  const rec=DB.financeiro.receitas.reduce((s,x)=>s+Number(x.valor||0),0);
+  const desp=DB.financeiro.despesas.reduce((s,x)=>s+Number(x.valor||0),0);
+  const tabs=`<div class="tabs"><button class="tab ${finTab==='receitas'?'active':''}" data-ftab="receitas">Receitas</button><button class="tab ${finTab==='despesas'?'active':''}" data-ftab="despesas">Despesas</button></div>`;
+  const list=DB.financeiro[finTab];
+  const rows=[...list].sort((a,b)=>b.data.localeCompare(a.data)).map(x=>`<div class="list-row"><div class="meta"><div class="t1">${x.descricao}</div><div class="t2">${fmtDate(x.data)} · ${x.categoria}</div></div>
+    <div class="t1">${brl(x.valor)}</div><button class="iconbtn" data-edit-fin="${x.id}">✎</button><button class="iconbtn" data-del-fin="${x.id}">✕</button></div>`).join('');
+  return `<h1 class="section-title">Financeiro</h1><p class="section-sub">Saldo atual: <strong style="color:${rec-desp>=0?'var(--forest)':'var(--brick)'}">${brl(rec-desp)}</strong> (receitas ${brl(rec)} · despesas ${brl(desp)})</p>
+  ${tabs}<div class="card"><div class="card-head"><h3>${finTab==='receitas'?'Receitas':'Despesas'}</h3><button class="btn ghost" data-add-fin>+ Novo lançamento</button></div>
+  ${rows||'<p class="empty">Nenhum lançamento ainda.</p>'}</div>`;
+}
+function openFinanceiroForm(id){
+  const cats=finTab==='receitas'? REC_CATS : DESP_CATS;
+  const x=id? DB.financeiro[finTab].find(i=>i.id===id) : {data:todayISO(),descricao:'',categoria:cats[0],valor:0,obs:''};
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>${id?'Editar lançamento':(finTab==='receitas'?'Nova receita':'Nova despesa')}</h3>
+    <div class="field"><label>Descrição</label><input id="fn-desc" value="${x.descricao.replace(/"/g,'&quot;')}"></div>
+    <div class="row2"><div class="field"><label>Data</label><input type="date" id="fn-data" value="${x.data}"></div>
+    <div class="field"><label>Categoria</label><select id="fn-cat">${cats.map(c=>`<option ${c===x.categoria?'selected':''}>${c}</option>`).join('')}</select></div></div>
+    <div class="field"><label>Valor (R$)</label><input type="number" step="0.01" id="fn-valor" value="${x.valor||0}"></div>
+    <div class="field"><label>Observações</label><input id="fn-obs" value="${x.obs||''}"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="fn-cancel">Cancelar</button><button class="btn" id="fn-save">Salvar</button></div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#fn-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#fn-save').onclick=()=>{
+    const descricao=back.querySelector('#fn-desc').value.trim(); if(!descricao) return;
+    const vals={descricao,data:back.querySelector('#fn-data').value,categoria:back.querySelector('#fn-cat').value,
+      valor:Number(back.querySelector('#fn-valor').value||0),obs:back.querySelector('#fn-obs').value.trim()};
+    if(id){ Object.assign(x,vals); } else DB.financeiro[finTab].push(Object.assign({id:(finTab==='receitas'?'r':'d')+Date.now()},vals));
+    save(); back.remove(); renderContent();
+  };
+}
+function viewEstoque(){
+  const tabs=`<div class="tabs"><button class="tab ${estTab==='estoque'?'active':''}" data-etab="estoque">Estoque</button><button class="tab ${estTab==='compras'?'active':''}" data-etab="compras">Lista de compras</button></div>`;
+  let body='';
+  if(estTab==='estoque'){
+    const rows=DB.estoque.map(e=>`<div class="list-row"><div class="meta"><div class="t1">${e.produto}</div><div class="t2">${e.categoria} · ${e.local||'—'}</div></div>
+      <div>${e.quantidade} ${e.unidade} ${Number(e.quantidade)<Number(e.minimo)?'<span class="tag overdue">estoque baixo</span>':''}</div>
+      <button class="iconbtn" data-edit-est="${e.id}">✎</button><button class="iconbtn" data-del-est="${e.id}">✕</button></div>`).join('');
+    body=`<div class="card"><div class="card-head"><h3>Estoque</h3><button class="btn ghost" data-add-est>+ Novo item</button></div>${rows||'<p class="empty">Estoque vazio.</p>'}</div>`;
+  } else {
+    const rows=DB.compras.map(c=>`<div class="list-row ${c.feito?'done':''}"><button class="check ${c.feito?'checked':''}" data-toggle-compra="${c.id}"></button>
+      <div class="meta task-title"><div class="t1">${c.produto} ${c.quantidade>1?'('+c.quantidade+')':''}</div></div>
+      <span class="tag">${c.prioridade}</span><button class="iconbtn" data-del-compra="${c.id}">✕</button></div>`).join('');
+    body=`<div class="card"><div class="card-head"><h3>Lista de compras</h3><button class="btn ghost" data-add-compra>+ Adicionar</button></div>${rows||'<p class="empty">Lista vazia.</p>'}</div>`;
+  }
+  return `<h1 class="section-title">Estoque</h1><p class="section-sub">Ferramentas, insumos e o que falta comprar.</p>${tabs}${body}`;
+}
+function openEstoqueForm(id){
+  const e=id? DB.estoque.find(x=>x.id===id) : {produto:'',categoria:'material',quantidade:0,unidade:'un',minimo:1,local:'',obs:''};
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>${id?'Editar item':'Novo item de estoque'}</h3>
+    <div class="field"><label>Produto</label><input id="es-nome" value="${e.produto.replace(/"/g,'&quot;')}"></div>
+    <div class="row2"><div class="field"><label>Categoria</label><input id="es-cat" value="${e.categoria}"></div>
+    <div class="field"><label>Local</label><input id="es-local" value="${e.local||''}"></div></div>
+    <div class="row2"><div class="field"><label>Quantidade</label><input type="number" step="0.01" id="es-qtd" value="${e.quantidade}"></div>
+    <div class="field"><label>Unidade</label><input id="es-un" value="${e.unidade}"></div></div>
+    <div class="field"><label>Estoque mínimo</label><input type="number" step="0.01" id="es-min" value="${e.minimo}"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="es-cancel">Cancelar</button><button class="btn" id="es-save">Salvar</button></div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#es-cancel').onclick=()=>back.remove();
+  back.onclick=(e2)=>{ if(e2.target===back) back.remove(); };
+  back.querySelector('#es-save').onclick=()=>{
+    const produto=back.querySelector('#es-nome').value.trim(); if(!produto) return;
+    const vals={produto,categoria:back.querySelector('#es-cat').value.trim()||'outros',local:back.querySelector('#es-local').value.trim(),
+      quantidade:Number(back.querySelector('#es-qtd').value||0),unidade:back.querySelector('#es-un').value.trim()||'un',
+      minimo:Number(back.querySelector('#es-min').value||0)};
+    if(id){ Object.assign(e,vals); } else DB.estoque.push(Object.assign({id:'e'+Date.now()},vals));
+    save(); back.remove(); renderContent();
+  };
+}
+function openCompraForm(){
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>Adicionar à lista de compras</h3>
+    <div class="field"><label>Produto</label><input id="cp-nome"></div>
+    <div class="row2"><div class="field"><label>Quantidade</label><input type="number" id="cp-qtd" value="1"></div>
+    <div class="field"><label>Prioridade</label><select id="cp-prio"><option value="baixa">Baixa</option><option value="normal" selected>Normal</option><option value="alta">Alta</option></select></div></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="cp-cancel">Cancelar</button><button class="btn" id="cp-save">Salvar</button></div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#cp-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#cp-save').onclick=()=>{
+    const produto=back.querySelector('#cp-nome').value.trim(); if(!produto) return;
+    DB.compras.push({id:'cp'+Date.now(),produto,quantidade:Number(back.querySelector('#cp-qtd').value||1),prioridade:back.querySelector('#cp-prio').value,feito:false});
+    save(); back.remove(); renderContent();
+  };
+}
+function bindContentEvents(){
+  document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{
+    const t=DB.tasks.find(x=>x.id===b.dataset.toggle);
+    t.status = t.status==='concluída' ? 'pendente' : 'concluída';
+    save(); renderContent();
+  });
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    DB.tasks = DB.tasks.filter(x=>x.id!==b.dataset.del);
+    save(); renderContent();
+  });
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ propTab=b.dataset.tab; renderContent(); });
+  const addProp=document.querySelector('[data-add-prop]'); if(addProp) addProp.onclick=()=>openPropertyForm();
+  document.querySelectorAll('[data-edit-prop]').forEach(b=>b.onclick=()=>openPropertyForm(b.dataset.editProp));
+  document.querySelectorAll('[data-del-prop]').forEach(b=>b.onclick=()=>{
+    DB.properties=DB.properties.filter(x=>x.id!==b.dataset.delProp); save(); renderContent();
+  });
+  const addArea=document.querySelector('[data-add-area]'); if(addArea) addArea.onclick=()=>openAreaForm();
+  document.querySelectorAll('[data-edit-area]').forEach(b=>b.onclick=()=>openAreaForm(b.dataset.editArea));
+  document.querySelectorAll('[data-del-area]').forEach(b=>b.onclick=()=>{
+    DB.areas=DB.areas.filter(x=>x.id!==b.dataset.delArea); save(); renderContent();
+  });
+  const addCultura=document.querySelector('[data-add-cultura]'); if(addCultura) addCultura.onclick=()=>openCulturaForm();
+  document.querySelectorAll('[data-edit-cultura]').forEach(b=>b.onclick=()=>openCulturaForm(b.dataset.editCultura));
+  document.querySelectorAll('[data-del-cultura]').forEach(b=>b.onclick=()=>{
+    DB.culturas=DB.culturas.filter(x=>x.id!==b.dataset.delCultura); save(); renderContent();
+  });
+  const addTalhao=document.querySelector('[data-add-talhao]'); if(addTalhao) addTalhao.onclick=()=>openTalhaoForm();
+  document.querySelectorAll('[data-edit-talhao]').forEach(b=>b.onclick=()=>openTalhaoForm(b.dataset.editTalhao));
+  document.querySelectorAll('[data-del-talhao]').forEach(b=>b.onclick=()=>{ DB.talhoes=DB.talhoes.filter(x=>x.id!==b.dataset.delTalhao); save(); renderContent(); });
+  const addCiclo=document.querySelector('[data-add-ciclo]'); if(addCiclo) addCiclo.onclick=()=>openCicloForm();
+  document.querySelectorAll('[data-edit-ciclo]').forEach(b=>b.onclick=()=>openCicloForm(b.dataset.editCiclo));
+  document.querySelectorAll('[data-del-ciclo]').forEach(b=>b.onclick=()=>{ DB.ciclos=DB.ciclos.filter(x=>x.id!==b.dataset.delCiclo); save(); renderContent(); });
+  const gotoTal=document.querySelector('[data-goto-talhoes]'); if(gotoTal) gotoTal.onclick=()=>{ view='propriedade'; propTab='talhoes'; renderNav(); renderContent(); };
+  const toggleProdSec=document.querySelector('[data-toggle-prodsec]'); if(toggleProdSec) toggleProdSec.onclick=()=>{ prodSecOpen=!prodSecOpen; renderContent(); };
+  const saveLoc=document.querySelector('[data-save-loc]'); if(saveLoc) saveLoc.onclick=()=>{
+    const prop=DB.properties[0]; if(!prop) return;
+    const latRaw=document.getElementById('loc-lat').value, lonRaw=document.getElementById('loc-lon').value;
+    let lat=latRaw===''?null:Number(latRaw), lon=lonRaw===''?null:Number(lonRaw);
+    if(lat!==null && !isNaN(lat)) lat=Math.max(-90,Math.min(90,lat)); else if(latRaw!=='') lat=null;
+    if(lon!==null && !isNaN(lon)) lon=Math.max(-180,Math.min(180,lon)); else if(lonRaw!=='') lon=null;
+    Object.assign(prop,{cidade:document.getElementById('loc-cidade').value.trim(),estado:document.getElementById('loc-estado').value.trim(),
+      pais:document.getElementById('loc-pais').value.trim(),timezone:document.getElementById('loc-tz').value.trim()||'America/Sao_Paulo',latitude:lat,longitude:lon});
+    DB.weatherCache=null; save(); renderContent();
+  };
+  const gotoLoc=document.querySelector('[data-goto-loc]'); if(gotoLoc) gotoLoc.onclick=()=>{ view='propriedade'; propTab='propriedades'; renderNav(); renderContent(); };
+  const gotoClima=document.querySelector('[data-goto-clima]'); if(gotoClima) gotoClima.onclick=()=>{ view='clima'; renderNav(); renderContent(); };
+  const refreshBtn=document.querySelector('[data-refresh-clima]'); if(refreshBtn) refreshBtn.onclick=()=>refreshClima();
+  const addProj=document.querySelector('[data-add-proj]'); if(addProj) addProj.onclick=()=>openProjetoForm();
+  document.querySelectorAll('[data-edit-proj]').forEach(b=>b.onclick=()=>openProjetoForm(b.dataset.editProj));
+  document.querySelectorAll('[data-del-proj]').forEach(b=>b.onclick=()=>{ DB.projetos=DB.projetos.filter(x=>x.id!==b.dataset.delProj); save(); renderContent(); });
+  const addSist=document.querySelector('[data-add-sist]'); if(addSist) addSist.onclick=()=>openSistemaForm();
+  document.querySelectorAll('[data-edit-sist]').forEach(b=>b.onclick=()=>openSistemaForm(b.dataset.editSist));
+  document.querySelectorAll('[data-del-sist]').forEach(b=>b.onclick=()=>{ DB.sistemas=DB.sistemas.filter(x=>x.id!==b.dataset.delSist); save(); renderContent(); });
+  const addVisita=document.querySelector('[data-add-visita]'); if(addVisita) addVisita.onclick=()=>openVisitaForm();
+  document.querySelectorAll('[data-del-visita]').forEach(b=>b.onclick=()=>{ DB.visitas=DB.visitas.filter(x=>x.id!==b.dataset.delVisita); save(); renderContent(); });
+  document.querySelectorAll('[data-ptab]').forEach(b=>b.onclick=()=>{ prodTab=b.dataset.ptab; renderContent(); });
+  document.querySelectorAll('[data-periodo]').forEach(b=>b.onclick=()=>{ prodPeriodo=b.dataset.periodo; renderContent(); });
+  const addProd=document.querySelector('[data-add-prod]'); if(addProd) addProd.onclick=()=>openProducaoForm();
+  document.querySelectorAll('[data-edit-prod]').forEach(b=>b.onclick=()=>openProducaoForm(b.dataset.editProd));
+  document.querySelectorAll('[data-del-prod]').forEach(b=>b.onclick=()=>{ DB.producao=DB.producao.filter(x=>x.id!==b.dataset.delProd); save(); renderContent(); });
+  document.querySelectorAll('[data-ftab]').forEach(b=>b.onclick=()=>{ finTab=b.dataset.ftab; renderContent(); });
+  const addFin=document.querySelector('[data-add-fin]'); if(addFin) addFin.onclick=()=>openFinanceiroForm();
+  document.querySelectorAll('[data-edit-fin]').forEach(b=>b.onclick=()=>openFinanceiroForm(b.dataset.editFin));
+  document.querySelectorAll('[data-del-fin]').forEach(b=>b.onclick=()=>{ DB.financeiro[finTab]=DB.financeiro[finTab].filter(x=>x.id!==b.dataset.delFin); save(); renderContent(); });
+  document.querySelectorAll('[data-etab]').forEach(b=>b.onclick=()=>{ estTab=b.dataset.etab; renderContent(); });
+  const addEst=document.querySelector('[data-add-est]'); if(addEst) addEst.onclick=()=>openEstoqueForm();
+  document.querySelectorAll('[data-edit-est]').forEach(b=>b.onclick=()=>openEstoqueForm(b.dataset.editEst));
+  document.querySelectorAll('[data-del-est]').forEach(b=>b.onclick=()=>{ DB.estoque=DB.estoque.filter(x=>x.id!==b.dataset.delEst); save(); renderContent(); });
+  const addCompra=document.querySelector('[data-add-compra]'); if(addCompra) addCompra.onclick=()=>openCompraForm();
+  document.querySelectorAll('[data-toggle-compra]').forEach(b=>b.onclick=()=>{ const c=DB.compras.find(x=>x.id===b.dataset.toggleCompra); c.feito=!c.feito; save(); renderContent(); });
+  document.querySelectorAll('[data-del-compra]').forEach(b=>b.onclick=()=>{ DB.compras=DB.compras.filter(x=>x.id!==b.dataset.delCompra); save(); renderContent(); });
+}
+function openPropertyForm(id){
+  const p=id? DB.properties.find(x=>x.id===id) : {name:'',area:'',purpose:''};
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>${id?'Editar propriedade':'Nova propriedade'}</h3>
+    <div class="field"><label>Nome</label><input id="pf-name" value="${p.name.replace(/"/g,'&quot;')}" placeholder="Ex: Sítio Boa Vista"></div>
+    <div class="field"><label>Área (tamanho)</label><input id="pf-area" value="${p.area}" placeholder="Ex: 1.000 m²"></div>
+    <div class="field"><label>Finalidade / observações</label><input id="pf-purpose" value="${p.purpose||''}" placeholder="Ex: Produção, lazer e consumo próprio"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn ghost" id="pf-cancel">Cancelar</button>
+      <button class="btn" id="pf-save">Salvar</button>
+    </div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#pf-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#pf-save').onclick=()=>{
+    const name=back.querySelector('#pf-name').value.trim(); if(!name) return;
+    const areaVal=back.querySelector('#pf-area').value.trim();
+    const purpose=back.querySelector('#pf-purpose').value.trim();
+    if(id){ Object.assign(p,{name,area:areaVal,purpose}); }
+    else DB.properties.push({id:'p'+Date.now(),name,area:areaVal,purpose,cidade:'',estado:'',pais:'',timezone:'America/Sao_Paulo',latitude:null,longitude:null});
+    save(); back.remove(); renderContent();
+  };
+}
+function openAreaForm(id){
+  const a=id? DB.areas.find(x=>x.id===id) : {name:'',uso:'',propertyId:DB.properties[0]?.id};
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>${id?'Editar área':'Nova área'}</h3>
+    <div class="field"><label>Nome da área</label><input id="af-name" value="${a.name.replace(/"/g,'&quot;')}" placeholder="Ex: Fundo"></div>
+    <div class="field"><label>Uso / o que tem aqui</label><input id="af-uso" value="${a.uso||''}" placeholder="Ex: Produção, amora, banana"></div>
+    <div class="field"><label>Propriedade</label><select id="af-prop">${DB.properties.map(p=>`<option value="${p.id}" ${p.id===a.propertyId?'selected':''}>${p.name}</option>`).join('')}</select></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn ghost" id="af-cancel">Cancelar</button>
+      <button class="btn" id="af-save">Salvar</button>
+    </div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#af-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#af-save').onclick=()=>{
+    const name=back.querySelector('#af-name').value.trim(); if(!name) return;
+    const uso=back.querySelector('#af-uso').value.trim();
+    const propertyId=back.querySelector('#af-prop').value;
+    if(id){ Object.assign(a,{name,uso,propertyId}); }
+    else DB.areas.push({id:'a'+Date.now(),name,uso,propertyId});
+    save(); back.remove(); renderContent();
+  };
+}
+const CULT_CATS=['fruta','raiz','grão','hortaliça','árvore','ornamental','outros'];
+const CULT_FINS=['consumo próprio','venda','produção','sombra','lenha','alimentação animal','ornamental','outros'];
+const CULT_STATUS=['ativa','colhida','perdida','removida'];
+function openCulturaForm(id){
+  const c=id? DB.culturas.find(x=>x.id===id) : {nome:'',variedade:'',area:DB.areas[0]?.id,categoria:'fruta',finalidade:'consumo próprio',status:'ativa',plantio:'',obs:''};
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal"><h3>${id?'Editar cultura':'Nova cultura'}</h3>
+    <div class="field"><label>Nome</label><input id="cf-nome" value="${c.nome.replace(/"/g,'&quot;')}" placeholder="Ex: Amora-preta"></div>
+    <div class="row2">
+      <div class="field"><label>Variedade</label><input id="cf-var" value="${c.variedade||''}"></div>
+      <div class="field"><label>Área</label><select id="cf-area">${DB.areas.map(a=>`<option value="${a.id}" ${a.id===c.area?'selected':''}>${a.name}</option>`).join('')}</select></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Categoria</label><select id="cf-cat">${CULT_CATS.map(x=>`<option ${x===c.categoria?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="field"><label>Finalidade</label><select id="cf-fin">${CULT_FINS.map(x=>`<option ${x===c.finalidade?'selected':''}>${x}</option>`).join('')}</select></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Status</label><select id="cf-status">${CULT_STATUS.map(x=>`<option ${x===c.status?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="field"><label>Data de plantio</label><input type="date" id="cf-plantio" value="${c.plantio||''}"></div>
+    </div>
+    <div class="field"><label>Observações</label><input id="cf-obs" value="${c.obs||''}"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn ghost" id="cf-cancel">Cancelar</button>
+      <button class="btn" id="cf-save">Salvar</button>
+    </div></div>`;
+  document.body.appendChild(back);
+  back.querySelector('#cf-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#cf-save').onclick=()=>{
+    const nome=back.querySelector('#cf-nome').value.trim(); if(!nome) return;
+    const vals={
+      nome, variedade:back.querySelector('#cf-var').value.trim(),
+      area:back.querySelector('#cf-area').value,
+      categoria:back.querySelector('#cf-cat').value,
+      finalidade:back.querySelector('#cf-fin').value,
+      status:back.querySelector('#cf-status').value,
+      plantio:back.querySelector('#cf-plantio').value,
+      obs:back.querySelector('#cf-obs').value.trim()
+    };
+    if(id){ Object.assign(c,vals); }
+    else DB.culturas.push(Object.assign({id:'c'+Date.now()},vals));
+    save(); back.remove(); renderContent();
+  };
+}
+document.getElementById('fab').onclick=openNewTask;
+function openNewTask(){
+  const back=document.createElement('div'); back.className='modal-back';
+  back.innerHTML=`<div class="modal">
+    <h3>Nova tarefa</h3>
+    <div class="field"><label>Título</label><input id="f-title" placeholder="Ex: Podar as amoreiras"></div>
+    <div class="row2">
+      <div class="field"><label>Área</label><select id="f-area">${DB.areas.map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}</select></div>
+      <div class="field"><label>Prioridade</label><select id="f-prio"><option value="baixa">Baixa</option><option value="normal" selected>Normal</option><option value="alta">Alta</option></select></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Data</label><input type="date" id="f-date" value="${todayISO()}"></div>
+      <div class="field"><label>Categoria</label><select id="f-cat"><option>manutenção</option><option>plantio</option><option>poda</option><option>irrigação</option><option>limpeza</option><option>compra</option><option>outros</option></select></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:.88rem;margin-bottom:16px"><input type="checkbox" id="f-visita"> Incluir na próxima visita</label>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn ghost" id="f-cancel">Cancelar</button>
+      <button class="btn" id="f-save">Salvar tarefa</button>
+    </div>
+  </div>`;
+  document.body.appendChild(back);
+  back.querySelector('#f-cancel').onclick=()=>back.remove();
+  back.onclick=(e)=>{ if(e.target===back) back.remove(); };
+  back.querySelector('#f-save').onclick=()=>{
+    const title=back.querySelector('#f-title').value.trim();
+    if(!title) return;
+    DB.tasks.push({
+      id:'t'+Date.now(), title,
+      area:back.querySelector('#f-area').value,
+      categoria:back.querySelector('#f-cat').value,
+      prioridade:back.querySelector('#f-prio').value,
+      status:'pendente',
+      date:back.querySelector('#f-date').value,
+      recorrente:false,
+      visita:back.querySelector('#f-visita').checked
+    });
+    save(); back.remove(); view='tarefas'; renderNav(); renderContent();
+  };
+}
+renderNav(); renderContent();
+</script>
+</body>
+</html>
