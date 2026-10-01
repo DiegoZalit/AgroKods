@@ -141,11 +141,11 @@ function seed(){
       {id:'a3',propertyId:'p1',name:'Fundo',uso:'Produção — amora, banana, mandioca'},
     ],
     tasks:[
-      {id:'t1',title:'Verificar amoreiras',area:'a3',categoria:'manutenção',prioridade:'alta',status:'pendente',date:todayISO(),recorrente:false,visita:true},
-      {id:'t2',title:'Fazer poda',area:'a3',categoria:'poda',prioridade:'alta',status:'pendente',date:todayISO(),recorrente:false,visita:true},
-      {id:'t3',title:'Conferir caixa d\'água',area:'a2',categoria:'manutenção',prioridade:'normal',status:'pendente',date:todayISO(),recorrente:true,visita:true},
-      {id:'t4',title:'Limpar área da piscina',area:'a2',categoria:'limpeza',prioridade:'normal',status:'pendente',date:addDays(2),recorrente:false,visita:false},
-      {id:'t5',title:'Comprar arame',area:'a3',categoria:'compra',prioridade:'baixa',status:'pendente',date:addDays(-2),recorrente:false,visita:true},
+      {id:'t1',title:'Verificar amoreiras',propertyId:'p1',areaId:'a3',area:'a3',categoria:'manutenção',prioridade:'alta',status:'pendente',date:todayISO(),recorrente:false,visita:true},
+      {id:'t2',title:'Fazer poda',propertyId:'p1',areaId:'a3',area:'a3',categoria:'poda',prioridade:'alta',status:'pendente',date:todayISO(),recorrente:false,visita:true},
+      {id:'t3',title:'Conferir caixa d\'água',propertyId:'p1',areaId:'a2',area:'a2',categoria:'manutenção',prioridade:'normal',status:'pendente',date:todayISO(),recorrente:true,visita:true},
+      {id:'t4',title:'Limpar área da piscina',propertyId:'p1',areaId:'a2',area:'a2',categoria:'limpeza',prioridade:'normal',status:'pendente',date:addDays(2),recorrente:false,visita:false},
+      {id:'t5',title:'Comprar arame',propertyId:'p1',areaId:'a3',area:'a3',categoria:'compra',prioridade:'baixa',status:'pendente',date:addDays(-2),recorrente:false,visita:true},
     ],
     culturas:[
       {id:'c1',nome:'Amora-preta',variedade:'',area:'a3',categoria:'fruta',finalidade:'venda',status:'ativa',plantio:'',obs:''},
@@ -194,6 +194,7 @@ function migrateDB(db){
   if(!db.talhoes) db.talhoes=[];
   if(!db.ciclos) db.ciclos=[];
   if(db.weatherCache===undefined) db.weatherCache=null;
+  if(db.currentPropertyId===undefined) db.currentPropertyId=db.properties[0]?.id||null;
   ['areas','tasks','culturas','projetos','sistemas','visitas','producao','estoque','compras'].forEach(k=>{ if(!db[k]) db[k]=[]; });
   if(!db.financeiro) db.financeiro={receitas:[],despesas:[]};
   else{ if(!db.financeiro.receitas) db.financeiro.receitas=[]; if(!db.financeiro.despesas) db.financeiro.despesas=[]; }
@@ -205,6 +206,47 @@ function migrateDB(db){
     if(p.pais===undefined) p.pais='';
     if(p.timezone===undefined) p.timezone='America/Sao_Paulo';
   });
+  // Migra registros antigos para a hierarquia Propriedade -> Área.
+  const areaById=id=>db.areas.find(a=>a.id===id);
+  db.areas.forEach(a=>{
+    if(!a.propertyId && db.properties[0]) a.propertyId=db.properties[0].id;
+  });
+  db.tasks.forEach(t=>{
+    if(!t.areaId && t.area) t.areaId=t.area;
+    if(!t.area && t.areaId) t.area=t.areaId;
+    if(!t.propertyId){ const a=areaById(t.areaId||t.area); t.propertyId=a?.propertyId||db.properties[0]?.id||null; }
+  });
+  db.culturas.forEach(c=>{
+    if(!c.areaId && c.area) c.areaId=c.area;
+    if(!c.area && c.areaId) c.area=c.areaId;
+    if(!c.propertyId){ const a=areaById(c.areaId||c.area); c.propertyId=a?.propertyId||db.properties[0]?.id||null; }
+  });
+  db.talhoes.forEach(t=>{ if(!t.propertyId) t.propertyId=db.properties[0]?.id||null; });
+  db.ciclos.forEach(c=>{
+    const t=db.talhoes.find(x=>x.id===c.talhao);
+    if(!c.propertyId) c.propertyId=t?.propertyId||db.properties[0]?.id||null;
+  });
+  db.producao.forEach(r=>{
+    const c=db.ciclos.find(x=>x.id===r.cicloId);
+    if(!r.propertyId) r.propertyId=c?.propertyId||db.properties[0]?.id||null;
+  });
+  db.projetos.forEach(x=>{
+    if(!x.areaId && x.area) x.areaId=x.area;
+    if(!x.area && x.areaId) x.area=x.areaId;
+    if(!x.propertyId){ const a=areaById(x.areaId||x.area); x.propertyId=a?.propertyId||db.properties[0]?.id||null; }
+  });
+  db.sistemas.forEach(x=>{
+    if(!x.areaId && x.area) x.areaId=x.area;
+    if(!x.area && x.areaId) x.area=x.areaId;
+    if(!x.propertyId){ const a=areaById(x.areaId||x.area); x.propertyId=a?.propertyId||db.properties[0]?.id||null; }
+  });
+  db.visitas.forEach(v=>{
+    if(!v.propertyId){
+      const t=v.tarefasConcluidas?.map(id=>db.tasks.find(x=>x.id===id)).find(Boolean);
+      v.propertyId=t?.propertyId||db.currentPropertyId||db.properties[0]?.id||null;
+    }
+  });
+  if(db.currentPropertyId && !db.properties.some(p=>p.id===db.currentPropertyId)) db.currentPropertyId=db.properties[0]?.id||null;
   return db;
 }
 let DB;
@@ -213,9 +255,15 @@ catch(e){ DB = seed(); }
 migrateDB(DB);
 save();
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){} }
+function currentProperty(){ return DB.properties.find(p=>p.id===DB.currentPropertyId)||DB.properties[0]||null; }
+function propertyName(id){ const p=DB.properties.find(x=>x.id===id); return p? p.name : '—'; }
+function areaPropertyId(id){ const a=DB.areas.find(x=>x.id===id); return a?.propertyId||null; }
 function areaName(id){ const a=DB.areas.find(x=>x.id===id); return a? a.name : '—'; }
 function culturaName(id){ const c=DB.culturas.find(x=>x.id===id); return c? c.nome : '—'; }
 function talhaoName(id){ const t=DB.talhoes.find(x=>x.id===id); return t? t.nome : '—'; }
+function areasByProperty(propertyId){ return DB.areas.filter(a=>a.propertyId===propertyId); }
+function tasksByProperty(propertyId){ return DB.tasks.filter(t=>t.propertyId===propertyId); }
+function setCurrentProperty(id){ if(DB.properties.some(p=>p.id===id)){ DB.currentPropertyId=id; save(); renderContent(); } }
 function prodInfo(p){
   if(p.cicloId){ const c=DB.ciclos.find(x=>x.id===p.cicloId); if(c) return {cultura:culturaName(c.cultura),talhao:talhaoName(c.talhao)}; }
   return {cultura:culturaName(p.cultura),talhao:'—'};
@@ -284,20 +332,20 @@ let climaLoading=false;
 let climaError=null;
 // Só consulta a API se não houver cache, se o cache tiver mais de 30min, ou se a localização mudou.
 function maybeRefreshClima(){
-  const prop=DB.properties[0];
+  const prop=currentProperty();
   if(!prop||prop.latitude==null||prop.longitude==null) return;
   const cache=DB.weatherCache;
-  const stale=!cache || (Date.now()-cache.timestamp>1800000) || cache.latitude!==prop.latitude || cache.longitude!==prop.longitude;
+  const stale=!cache || (Date.now()-cache.timestamp>1800000) || cache.propertyId!==prop.id || cache.latitude!==prop.latitude || cache.longitude!==prop.longitude;
   if(stale) refreshClima();
 }
 function refreshClima(){
   if(climaLoading) return;
-  const prop=DB.properties[0];
+  const prop=currentProperty();
   if(!prop||prop.latitude==null||prop.longitude==null) return;
   climaLoading=true; climaError=null;
   if(view==='clima') renderContent();
   WeatherService.getWeatherData(prop.latitude,prop.longitude,prop.timezone).then(data=>{
-    DB.weatherCache={data,timestamp:Date.now(),latitude:prop.latitude,longitude:prop.longitude};
+    DB.weatherCache={data,timestamp:Date.now(),propertyId:prop.id,latitude:prop.latitude,longitude:prop.longitude};
     save(); climaLoading=false; climaError=null;
     if(view==='clima'||view==='dashboard') renderContent();
   }).catch(()=>{
@@ -331,7 +379,7 @@ function taskStatusTag(t){
 function taskRow(t){
   return `<div class="task-row ${t.status==='concluída'?'done':''}">
     <button class="check ${t.status==='concluída'?'checked':''}" data-toggle="${t.id}"></button>
-    <span class="task-title">${t.title} <span style="color:var(--ink-soft);font-size:.8rem">· ${areaName(t.area)}</span></span>
+    <span class="task-title">${t.title} <span style="color:var(--ink-soft);font-size:.8rem">· ${propertyName(t.propertyId)} · ${areaName(t.areaId||t.area)}</span></span>
     ${taskStatusTag(t)}
     <button class="btn del" data-del="${t.id}">✕</button>
   </div>`;
@@ -359,14 +407,17 @@ function viewEmpty(label){
   <div class="card"><p class="empty">Nada aqui ainda. Sem dados fictícios — só o que realmente existe.</p></div>`;
 }
 function viewDashboard(){
-  const pending=DB.tasks.filter(t=>t.status!=='concluída');
+  const prop=currentProperty();
+  const tasks=prop?tasksByProperty(prop.id):[];
+  const pending=tasks.filter(t=>t.status!=='concluída');
   const overdue=pending.filter(t=>t.date<todayISO());
   const today=pending.filter(t=>t.date===todayISO());
   const upcoming=pending.filter(t=>t.date>todayISO()).sort((a,b)=>a.date.localeCompare(b.date));
   const visita=pending.filter(t=>t.visita);
   return `
   <h1 class="section-title">Dashboard</h1>
-  <p class="section-sub">Rancho Blackberry — o que precisa acontecer agora.</p>
+  <div class="card" style="margin-bottom:16px"><div class="field" style="margin:0"><label>Propriedade em foco</label><select id="dashboard-property">${DB.properties.map(p=>`<option value="${p.id}" ${p.id===prop?.id?'selected':''}>${p.name}</option>`).join('')}</select></div></div>
+  <p class="section-sub">${prop?.name||'Nenhuma propriedade selecionada'} — o que precisa acontecer agora.</p>
   <div class="visit-banner">
     <p class="eyebrow">PRÓXIMA VISITA</p>
     <h2>${visita.length? visita.length+' tarefa(s) planejada(s)' : 'Nenhuma tarefa marcada para a visita'}</h2>
@@ -388,13 +439,13 @@ function viewDashboard(){
   ${prodSection()}`;
 }
 function prodSection(){
-  const counts=talhaoCounts();
+  const counts=talhaoCounts(currentProperty()?.id);
   const header=`<div class="card-head" data-toggle-prodsec style="cursor:pointer">
     <div><h3 style="margin-bottom:2px">🌱 Produção da propriedade</h3><p class="t2" style="margin:0">Visão rápida dos talhões, culturas e próximas colheitas.</p></div>
     <span class="iconbtn">${prodSecOpen?'⌃ Recolher':'⌄ Expandir'}</span></div>`;
   if(!prodSecOpen){
     return `<div class="card" style="margin-top:22px">${header}
-    <p class="t2" style="margin:4px 0 0">${DB.talhoes.length} talhões · ${counts['Em produção']} em produção · ${counts['Em desenvolvimento']} em desenvolvimento · ${counts['Disponível']} disponíveis</p></div>`;
+    <p class="t2" style="margin:4px 0 0">${DB.talhoes.filter(t=>t.propertyId===currentProperty()?.id).length} talhões · ${counts['Em produção']} em produção · ${counts['Em desenvolvimento']} em desenvolvimento · ${counts['Disponível']} disponíveis</p></div>`;
   }
   return `<div class="card" style="margin-top:22px">${header}
   <div class="grid" style="margin-top:14px">
@@ -406,9 +457,9 @@ function prodSection(){
     <div><h3>🌤️ Clima</h3>${dashClimaHtml()}</div>
   </div></div>`;
 }
-function talhaoCounts(){
+function talhaoCounts(propertyId){
   const counts={}; TALHAO_STATUS.forEach(s=>counts[s]=0);
-  DB.talhoes.forEach(t=>{ counts[t.status]=(counts[t.status]||0)+1; });
+  DB.talhoes.filter(t=>!propertyId || t.propertyId===propertyId).forEach(t=>{ counts[t.status]=(counts[t.status]||0)+1; });
   return counts;
 }
 function talhoesSummaryHtml(counts){
@@ -417,7 +468,7 @@ function talhoesSummaryHtml(counts){
 }
 function proximasColheitasHtml(){
   const today=todayISO();
-  const list=DB.ciclos.filter(c=>c.status!=='Encerrado' && c.estFimColheita && c.estFimColheita>=today)
+  const list=DB.ciclos.filter(c=>c.propertyId===currentProperty()?.id && c.status!=='Encerrado' && c.estFimColheita && c.estFimColheita>=today)
     .map(c=>({...c,dias:Math.max(0,Math.ceil((new Date(c.estFimColheita)-new Date(today))/86400000))}))
     .sort((a,b)=>a.estFimColheita.localeCompare(b.estFimColheita)).slice(0,3);
   if(!list.length) return '<p class="empty">Nenhuma colheita estimada no momento.</p>';
@@ -426,14 +477,14 @@ function proximasColheitasHtml(){
 }
 function prodMiniChartHtml(){
   const byCultura={};
-  DB.producao.forEach(p=>{ const n=prodInfo(p).cultura; byCultura[n]=(byCultura[n]||0)+Number(p.quantidade||0); });
+  DB.producao.filter(p=>p.propertyId===currentProperty()?.id).forEach(p=>{ const n=prodInfo(p).cultura; byCultura[n]=(byCultura[n]||0)+Number(p.quantidade||0); });
   const entries=Object.entries(byCultura).sort((a,b)=>b[1]-a[1]).slice(0,5);
   if(!entries.length) return '<p class="empty">Registre sua primeira colheita para acompanhar a produção.</p>';
   const max=Math.max(...entries.map(e=>e[1]));
   return entries.map(([n,v])=>`<div class="stat-line"><span style="width:60px;flex-shrink:0">${n}</span><div class="mini-bar-track"><div class="mini-bar" style="width:${Math.max(6,v/max*100)}%"></div></div></div>`).join('');
 }
 function dashClimaHtml(){
-  const prop=DB.properties[0];
+  const prop=currentProperty();
   if(!prop||prop.latitude==null||prop.longitude==null) return '<p class="empty">Configure a localização da propriedade (aba Propriedade) para ver o clima.</p>';
   const cache=DB.weatherCache;
   if(!cache) return `<p class="empty">${climaError||'Carregando dados climáticos...'}</p>`;
@@ -454,13 +505,16 @@ function dashFinanceiro(){
   <div class="list-row"><div class="meta t1">Saldo</div><div class="t1" style="color:${rec-desp>=0?'var(--forest)':'var(--brick)'}">${brl(rec-desp)}</div></div>`;
 }
 function dashProjetos(){
-  const em=DB.projetos.filter(p=>p.status==='em andamento');
+  const pid=currentProperty()?.id;
+  const em=DB.projetos.filter(p=>p.status==='em andamento' && p.propertyId===pid);
   if(!em.length) return '<p class="empty">Nenhum projeto em andamento.</p>';
   return em.map(p=>`<div class="list-row"><div class="meta"><div class="t1">${p.nome}</div><div class="t2">${p.progresso||0}% concluído</div></div></div>`).join('');
 }
 function dashSistemas(){
-  if(!DB.sistemas.length) return '<p class="empty">Nenhum sistema cadastrado.</p>';
-  return DB.sistemas.map(s=>`<div class="list-row"><div class="meta"><div class="t1">${s.nome}</div><div class="t2">${areaName(s.area)} · ${s.status}</div></div></div>`).join('');
+  const pid=currentProperty()?.id;
+  const items=DB.sistemas.filter(s=>s.propertyId===pid);
+  if(!items.length) return '<p class="empty">Nenhum sistema cadastrado.</p>';
+  return items.map(s=>`<div class="list-row"><div class="meta"><div class="t1">${s.nome}</div><div class="t2">${areaName(s.area)} · ${s.status}</div></div></div>`).join('');
 }
 const TABS=[{id:'propriedades',label:'Propriedades'},{id:'areas',label:'Áreas'},{id:'talhoes',label:'Talhões'},{id:'culturas',label:'Plantas e Culturas'}];
 function viewPropriedade(){
@@ -480,7 +534,7 @@ function viewProperties(){
     <button class="iconbtn" data-edit-prop="${p.id}">✎</button>
     <button class="iconbtn" data-del-prop="${p.id}">✕</button>
   </div>`).join('');
-  const prop=DB.properties[0];
+  const prop=currentProperty();
   const locHtml=prop? `<div class="card" style="margin-top:16px">
     <h3>Localização para o clima</h3>
     <div class="row2"><div class="field"><label>Cidade</label><input id="loc-cidade" value="${(prop.cidade||'').replace(/"/g,'&quot;')}"></div>
@@ -492,17 +546,20 @@ function viewProperties(){
     <p class="empty" style="margin:-4px 0 10px">Informe a latitude e a longitude aproximadas da propriedade para ativar o módulo de Clima.</p>
     <button class="btn" data-save-loc id="loc-save-anchor">Salvar localização</button>
   </div>` : '';
-  return `<div class="card"><div class="card-head"><h3>Minhas Propriedades</h3><button class="btn ghost" data-add-prop>+ Nova propriedade</button></div>${rows||'<p class="empty">Nenhuma propriedade cadastrada.</p>'}</div>${locHtml}`;
+  const selector=DB.properties.length?`<div class="card" style="margin-bottom:16px"><div class="field" style="margin:0"><label>Propriedade em foco</label><select id="property-focus">${DB.properties.map(p=>`<option value="${p.id}" ${p.id===prop?.id?'selected':''}>${p.name}</option>`).join('')}</select></div></div>`:'';
+  return selector+`<div class="card"><div class="card-head"><h3>Minhas Propriedades</h3><button class="btn ghost" data-add-prop>+ Nova propriedade</button></div>${rows||'<p class="empty">Nenhuma propriedade cadastrada.</p>'}</div>${locHtml}`;
 }
 function viewAreas(){
-  const rows=DB.areas.map(a=>`<div class="area-card">
+  const pid=currentProperty()?.id;
+  const rows=DB.areas.filter(a=>a.propertyId===pid).map(a=>`<div class="area-card">
     <div class="row-actions"><button class="iconbtn" data-edit-area="${a.id}">✎</button><button class="iconbtn" data-del-area="${a.id}">✕</button></div>
     <h4>${a.name}</h4><p>${a.uso||'—'}</p></div>`).join('');
   return `<div class="card"><div class="card-head"><h3>Áreas</h3><button class="btn ghost" data-add-area>+ Nova área</button></div>
   <div class="areas">${rows||'<p class="empty">Nenhuma área cadastrada.</p>'}</div></div>`;
 }
 function viewCulturas(){
-  const rows=DB.culturas.map(c=>`<div class="list-row">
+  const pid=currentProperty()?.id;
+  const rows=DB.culturas.filter(c=>c.propertyId===pid).map(c=>`<div class="list-row">
     <div class="meta"><div class="t1">${c.nome}${c.variedade?' · '+c.variedade:''}</div><div class="t2">${areaName(c.area)} · ${c.categoria} · ${c.finalidade} · <span class="tag">${c.status}</span></div></div>
     <button class="iconbtn" data-edit-cultura="${c.id}">✎</button>
     <button class="iconbtn" data-del-cultura="${c.id}">✕</button>
@@ -510,7 +567,8 @@ function viewCulturas(){
   return `<div class="card"><div class="card-head"><h3>Plantas e Culturas</h3><button class="btn ghost" data-add-cultura>+ Nova cultura</button></div>${rows||'<p class="empty">Nenhuma cultura cadastrada.</p>'}</div>`;
 }
 function viewTalhoes(){
-  const rows=DB.talhoes.map(t=>{
+  const pid=currentProperty()?.id;
+  const rows=DB.talhoes.filter(t=>t.propertyId===pid).map(t=>{
     const ac=activeCiclo(t.id);
     return `<div class="list-row">
     <span class="dot" style="background:${TALHAO_DOT[t.status]||'#999'}"></span>
@@ -524,7 +582,7 @@ function viewTalhoes(){
   <p class="section-sub" style="margin-top:10px">A cultura de cada talhão é definida pelos Ciclos de produção, na aba Produção — um talhão pode mudar de cultura ao longo do tempo.</p>`;
 }
 function openTalhaoForm(id){
-  const t=id? DB.talhoes.find(x=>x.id===id) : {nome:'',areaM2:0,descricao:'',status:'Disponível',obs:''};
+  const t=id? DB.talhoes.find(x=>x.id===id) : {nome:'',areaM2:0,descricao:'',status:'Disponível',obs:'',propertyId:currentProperty()?.id};
   const back=document.createElement('div'); back.className='modal-back';
   back.innerHTML=`<div class="modal"><h3>${id?'Editar talhão':'Novo talhão'}</h3>
     <div class="field"><label>Nome / identificação</label><input id="th-nome" value="${t.nome.replace(/"/g,'&quot;')}" placeholder="Ex: Talhão 4"></div>
@@ -538,14 +596,14 @@ function openTalhaoForm(id){
   back.onclick=(e)=>{ if(e.target===back) back.remove(); };
   back.querySelector('#th-save').onclick=()=>{
     const nome=back.querySelector('#th-nome').value.trim(); if(!nome) return;
-    const vals={nome,areaM2:Number(back.querySelector('#th-area').value||0),status:back.querySelector('#th-status').value,
+    const vals={nome,propertyId:t.propertyId||currentProperty()?.id,areaM2:Number(back.querySelector('#th-area').value||0),status:back.querySelector('#th-status').value,
       descricao:back.querySelector('#th-desc').value.trim(),obs:back.querySelector('#th-obs').value.trim()};
     if(id){ Object.assign(t,vals); } else DB.talhoes.push(Object.assign({id:'th'+Date.now()},vals));
     save(); back.remove(); renderContent();
   };
 }
 function viewClima(){
-  const prop=DB.properties[0];
+  const prop=currentProperty();
   const local=[prop?.cidade,prop?.estado].filter(Boolean).join(' - ')||'—';
   if(!prop||prop.latitude==null||prop.longitude==null){
     return `<h1 class="section-title">Clima</h1><p class="section-sub">Condições climáticas e previsão para sua propriedade</p>
@@ -691,14 +749,15 @@ function openImportConfirm(parsed){
   };
 }
 function viewTarefas(){
-  const sorted=[...DB.tasks].sort((a,b)=>(a.status==='concluída')-(b.status==='concluída') || a.date.localeCompare(b.date));
-  return `<h1 class="section-title">Tarefas</h1>
-  <p class="section-sub">Todas as tarefas do Rancho Blackberry.</p>
-  <div class="card">${sorted.length? sorted.map(taskRow).join('') : '<p class="empty">Nenhuma tarefa ainda. Toque em + para criar.</p>'}</div>`;
+  const prop=currentProperty();
+  const sorted=[...(prop?tasksByProperty(prop.id):[])].sort((a,b)=>(a.status==='concluída')-(b.status==='concluída') || a.date.localeCompare(b.date));
+  return `<h1 class="section-title">Tarefas</h1><p class="section-sub">Tarefas da propriedade em foco: <strong>${prop?.name||'—'}</strong>.</p><div class="card">${sorted.length? sorted.map(taskRow).join('') : '<p class="empty">Nenhuma tarefa nesta propriedade. Toque em + para criar.</p>'}</div>`;
 }
+
 const PROJ_STATUS=['planejado','em andamento','pausado','concluído','cancelado'];
 function viewProjetos(){
-  const rows=DB.projetos.map(p=>`<div class="card" style="margin-bottom:12px">
+  const pid=currentProperty()?.id;
+  const rows=DB.projetos.filter(p=>p.propertyId===pid).map(p=>`<div class="card" style="margin-bottom:12px">
     <div class="card-head"><h3>${p.nome}</h3><div><button class="iconbtn" data-edit-proj="${p.id}">✎</button><button class="iconbtn" data-del-proj="${p.id}">✕</button></div></div>
     <p class="t2" style="margin:0 0 8px">${p.descricao||''}</p>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
@@ -713,12 +772,13 @@ function viewProjetos(){
   ${rows||'<div class="card"><p class="empty">Nenhum projeto cadastrado.</p></div>'}`;
 }
 function openProjetoForm(id){
-  const p=id? DB.projetos.find(x=>x.id===id) : {nome:'',descricao:'',area:DB.areas[0]?.id,status:'planejado',prioridade:'normal',inicio:todayISO(),prazo:'',orcamento:0,custo:0,progresso:0,obs:''};
+  const p=id? DB.projetos.find(x=>x.id===id) : {nome:'',descricao:'',propertyId:currentProperty()?.id,area:areasByProperty(currentProperty()?.id)[0]?.id,status:'planejado',prioridade:'normal',inicio:todayISO(),prazo:'',orcamento:0,custo:0,progresso:0,obs:''};
   const back=document.createElement('div'); back.className='modal-back';
   back.innerHTML=`<div class="modal"><h3>${id?'Editar projeto':'Novo projeto'}</h3>
     <div class="field"><label>Nome</label><input id="pj-nome" value="${p.nome.replace(/"/g,'&quot;')}" placeholder="Ex: Construir galinheiro"></div>
+    <div class="field"><label>Propriedade</label><select id="pj-prop">${DB.properties.map(x=>`<option value="${x.id}" ${x.id===p.propertyId?'selected':''}>${x.name}</option>`).join('')}</select></div>
     <div class="field"><label>Descrição</label><input id="pj-desc" value="${p.descricao||''}"></div>
-    <div class="row2"><div class="field"><label>Área</label><select id="pj-area">${DB.areas.map(a=>`<option value="${a.id}" ${a.id===p.area?'selected':''}>${a.name}</option>`).join('')}</select></div>
+    <div class="row2"><div class="field"><label>Área</label><select id="pj-area">${areasByProperty(p.propertyId).map(a=>`<option value="${a.id}" ${a.id===p.area?'selected':''}>${a.name}</option>`).join('')}</select></div>
     <div class="field"><label>Status</label><select id="pj-status">${PROJ_STATUS.map(s=>`<option ${s===p.status?'selected':''}>${s}</option>`).join('')}</select></div></div>
     <div class="row2"><div class="field"><label>Prioridade</label><select id="pj-prio"><option value="baixa" ${p.prioridade==='baixa'?'selected':''}>Baixa</option><option value="normal" ${p.prioridade==='normal'?'selected':''}>Normal</option><option value="alta" ${p.prioridade==='alta'?'selected':''}>Alta</option></select></div>
     <div class="field"><label>Progresso (%)</label><input type="number" min="0" max="100" id="pj-prog" value="${p.progresso||0}"></div></div>
@@ -730,10 +790,11 @@ function openProjetoForm(id){
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="pj-cancel">Cancelar</button><button class="btn" id="pj-save">Salvar</button></div></div>`;
   document.body.appendChild(back);
   back.querySelector('#pj-cancel').onclick=()=>back.remove();
+  back.querySelector('#pj-prop').onchange=()=>{ const pid=back.querySelector('#pj-prop').value; const a=areasByProperty(pid); back.querySelector('#pj-area').innerHTML=a.map(x=>`<option value=\"${x.id}\">${x.name}</option>`).join('')||'<option value=\"\">Sem áreas cadastradas</option>'; };
   back.onclick=(e)=>{ if(e.target===back) back.remove(); };
   back.querySelector('#pj-save').onclick=()=>{
     const nome=back.querySelector('#pj-nome').value.trim(); if(!nome) return;
-    const vals={nome,descricao:back.querySelector('#pj-desc').value.trim(),area:back.querySelector('#pj-area').value,
+    const vals={nome,descricao:back.querySelector('#pj-desc').value.trim(),propertyId:back.querySelector('#pj-prop').value,area:back.querySelector('#pj-area').value,areaId:back.querySelector('#pj-area').value,
       status:back.querySelector('#pj-status').value,prioridade:back.querySelector('#pj-prio').value,
       progresso:Number(back.querySelector('#pj-prog').value||0),inicio:back.querySelector('#pj-inicio').value,
       prazo:back.querySelector('#pj-prazo').value,orcamento:Number(back.querySelector('#pj-orc').value||0),
@@ -743,27 +804,30 @@ function openProjetoForm(id){
   };
 }
 function viewSistemas(){
-  const rows=DB.sistemas.map(s=>`<div class="list-row"><div class="meta"><div class="t1">${s.nome}</div><div class="t2">${s.descricao||''} · ${areaName(s.area)} · <span class="tag">${s.status}</span></div></div>
+  const pid=currentProperty()?.id;
+  const rows=DB.sistemas.filter(s=>s.propertyId===pid).map(s=>`<div class="list-row"><div class="meta"><div class="t1">${s.nome}</div><div class="t2">${s.descricao||''} · ${areaName(s.area)} · <span class="tag">${s.status}</span></div></div>
     <button class="iconbtn" data-edit-sist="${s.id}">✎</button><button class="iconbtn" data-del-sist="${s.id}">✕</button></div>`).join('');
   return `<h1 class="section-title">Sistemas</h1><p class="section-sub">Atividades contínuas da propriedade.</p>
   <div class="card"><div class="card-head"><h3>Sistemas</h3><button class="btn ghost" data-add-sist>+ Novo sistema</button></div>
   ${rows||'<p class="empty">Nenhum sistema cadastrado.</p>'}</div>`;
 }
 function openSistemaForm(id){
-  const s=id? DB.sistemas.find(x=>x.id===id) : {nome:'',descricao:'',area:DB.areas[0]?.id,status:'ativo',obs:''};
+  const s=id? DB.sistemas.find(x=>x.id===id) : {nome:'',descricao:'',propertyId:currentProperty()?.id,area:areasByProperty(currentProperty()?.id)[0]?.id,status:'ativo',obs:''};
   const back=document.createElement('div'); back.className='modal-back';
   back.innerHTML=`<div class="modal"><h3>${id?'Editar sistema':'Novo sistema'}</h3>
     <div class="field"><label>Nome</label><input id="sy-nome" value="${s.nome.replace(/"/g,'&quot;')}" placeholder="Ex: Sistema de irrigação"></div>
+    <div class="field"><label>Propriedade</label><select id="sy-prop">${DB.properties.map(x=>`<option value="${x.id}" ${x.id===s.propertyId?'selected':''}>${x.name}</option>`).join('')}</select></div>
     <div class="field"><label>Descrição</label><input id="sy-desc" value="${s.descricao||''}"></div>
-    <div class="row2"><div class="field"><label>Área</label><select id="sy-area">${DB.areas.map(a=>`<option value="${a.id}" ${a.id===s.area?'selected':''}>${a.name}</option>`).join('')}</select></div>
+    <div class="row2"><div class="field"><label>Área</label><select id="sy-area">${areasByProperty(s.propertyId).map(a=>`<option value="${a.id}" ${a.id===s.area?'selected':''}>${a.name}</option>`).join('')}</select></div>
     <div class="field"><label>Status</label><select id="sy-status"><option value="ativo" ${s.status==='ativo'?'selected':''}>Ativo</option><option value="inativo" ${s.status==='inativo'?'selected':''}>Inativo</option></select></div></div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="sy-cancel">Cancelar</button><button class="btn" id="sy-save">Salvar</button></div></div>`;
   document.body.appendChild(back);
   back.querySelector('#sy-cancel').onclick=()=>back.remove();
+  back.querySelector('#sy-prop').onchange=()=>{ const pid=back.querySelector('#sy-prop').value; const a=areasByProperty(pid); back.querySelector('#sy-area').innerHTML=a.map(x=>`<option value=\"${x.id}\">${x.name}</option>`).join('')||'<option value=\"\">Sem áreas cadastradas</option>'; };
   back.onclick=(e)=>{ if(e.target===back) back.remove(); };
   back.querySelector('#sy-save').onclick=()=>{
     const nome=back.querySelector('#sy-nome').value.trim(); if(!nome) return;
-    const vals={nome,descricao:back.querySelector('#sy-desc').value.trim(),area:back.querySelector('#sy-area').value,status:back.querySelector('#sy-status').value};
+    const vals={nome,descricao:back.querySelector('#sy-desc').value.trim(),propertyId:back.querySelector('#sy-prop').value,area:back.querySelector('#sy-area').value,areaId:back.querySelector('#sy-area').value,status:back.querySelector('#sy-status').value};
     if(id){ Object.assign(s,vals); } else DB.sistemas.push(Object.assign({id:'sy'+Date.now()},vals));
     save(); back.remove(); renderContent();
   };
@@ -780,9 +844,11 @@ function viewVisitas(){
   ${rows||'<div class="card"><p class="empty">Nenhuma visita registrada ainda.</p></div>'}`;
 }
 function openVisitaForm(){
-  const pendentes=DB.tasks.filter(t=>t.status!=='concluída');
+  const propertyId=currentProperty()?.id;
+  const pendentes=DB.tasks.filter(t=>t.status!=='concluída' && t.propertyId===propertyId);
   const back=document.createElement('div'); back.className='modal-back';
   back.innerHTML=`<div class="modal"><h3>Registrar visita</h3>
+    <div class="field"><label>Propriedade</label><select id="v-prop">${DB.properties.map(p=>`<option value="${p.id}" ${p.id===propertyId?'selected':''}>${p.name}</option>`).join('')}</select></div>
     <div class="row2"><div class="field"><label>Data</label><input type="date" id="v-data" value="${todayISO()}"></div>
     <div class="field"><label>Entrada</label><input type="time" id="v-entrada"></div></div>
     <div class="field"><label>Saída</label><input type="time" id="v-saida"></div>
@@ -797,7 +863,7 @@ function openVisitaForm(){
   back.querySelector('#v-save').onclick=()=>{
     const done=[...back.querySelectorAll('.v-task:checked')].map(c=>c.value);
     done.forEach(id=>{ const t=DB.tasks.find(x=>x.id===id); if(t) t.status='concluída'; });
-    DB.visitas.push({id:'vi'+Date.now(),data:back.querySelector('#v-data').value,entrada:back.querySelector('#v-entrada').value,
+    DB.visitas.push({id:'vi'+Date.now(),propertyId:back.querySelector('#v-prop').value,data:back.querySelector('#v-data').value,entrada:back.querySelector('#v-entrada').value,
       saida:back.querySelector('#v-saida').value,tarefasConcluidas:done,obs:back.querySelector('#v-obs').value.trim()});
     save(); back.remove(); renderContent();
   };
@@ -841,7 +907,8 @@ function viewProducao(){
   return `<h1 class="section-title">Produção</h1><p class="section-sub">Do talhão à colheita: acompanhe os ciclos de produção da propriedade.</p>${tabs}${body}`;
 }
 function viewCiclos(){
-  const rows=DB.ciclos.map(c=>`<div class="card" style="margin-bottom:12px">
+  const pid=currentProperty()?.id;
+  const rows=DB.ciclos.filter(c=>c.propertyId===pid).map(c=>`<div class="card" style="margin-bottom:12px">
     <div class="card-head"><h3>${talhaoName(c.talhao)} — ${culturaName(c.cultura)}${c.variedade?' ('+c.variedade+')':''}</h3><div><button class="iconbtn" data-edit-ciclo="${c.id}">✎</button><button class="iconbtn" data-del-ciclo="${c.id}">✕</button></div></div>
     <div class="t2" style="margin-bottom:6px">${CICLO_STATUS.map(s=>CICLO_EMOJI[s]).join(' → ')}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"><span class="tag">${CICLO_EMOJI[c.status]||''} ${c.status}</span>${c.dataPlantio?`<span class="tag">plantio ${fmtDate(c.dataPlantio)}</span>`:''}${c.estInicioColheita?`<span class="tag">colheita est. ${fmtDate(c.estInicioColheita)}${c.estFimColheita?' → '+fmtDate(c.estFimColheita):''}</span>`:''}</div>
@@ -860,11 +927,11 @@ function openCicloForm(id){
     back.onclick=(e)=>{ if(e.target===back) back.remove(); };
     return;
   }
-  const c=id? DB.ciclos.find(x=>x.id===id) : {talhao:DB.talhoes[0]?.id,cultura:DB.culturas[0]?.id,variedade:'',dataPlantio:todayISO(),areaUtilizada:0,qtdPlantas:0,estInicioProducao:'',estInicioColheita:'',estFimColheita:'',status:'Planejado',obs:''};
+  const c=id? DB.ciclos.find(x=>x.id===id) : {propertyId:currentProperty()?.id,talhao:DB.talhoes.find(t=>t.propertyId===currentProperty()?.id)?.id,cultura:DB.culturas.find(x=>x.propertyId===currentProperty()?.id)?.id,variedade:'',dataPlantio:todayISO(),areaUtilizada:0,qtdPlantas:0,estInicioProducao:'',estInicioColheita:'',estFimColheita:'',status:'Planejado',obs:''};
   const back=document.createElement('div'); back.className='modal-back';
   back.innerHTML=`<div class="modal"><h3>${id?'Editar ciclo de produção':'Novo ciclo de produção'}</h3>
-    <div class="row2"><div class="field"><label>Talhão</label><select id="ci-talhao">${DB.talhoes.map(t=>`<option value="${t.id}" ${t.id===c.talhao?'selected':''}>${t.nome}</option>`).join('')}</select></div>
-    <div class="field"><label>Cultura</label><select id="ci-cultura">${DB.culturas.map(x=>`<option value="${x.id}" ${x.id===c.cultura?'selected':''}>${x.nome}</option>`).join('')}</select></div></div>
+    <div class="row2"><div class="field"><label>Talhão</label><select id="ci-talhao">${DB.talhoes.filter(t=>t.propertyId===c.propertyId).map(t=>`<option value="${t.id}" ${t.id===c.talhao?'selected':''}>${t.nome}</option>`).join('')}</select></div>
+    <div class="field"><label>Cultura</label><select id="ci-cultura">${DB.culturas.filter(x=>x.propertyId===c.propertyId).map(x=>`<option value="${x.id}" ${x.id===c.cultura?'selected':''}>${x.nome}</option>`).join('')}</select></div></div>
     <div class="row2"><div class="field"><label>Variedade</label><input id="ci-var" value="${c.variedade||''}"></div>
     <div class="field"><label>Status do ciclo</label><select id="ci-status">${CICLO_STATUS.map(s=>`<option ${s===c.status?'selected':''}>${s}</option>`).join('')}</select></div></div>
     <div class="row2"><div class="field"><label>Data de plantio</label><input type="date" id="ci-plantio" value="${c.dataPlantio||''}"></div>
@@ -880,7 +947,7 @@ function openCicloForm(id){
   back.querySelector('#ci-cancel').onclick=()=>back.remove();
   back.onclick=(e)=>{ if(e.target===back) back.remove(); };
   back.querySelector('#ci-save').onclick=()=>{
-    const vals={talhao:back.querySelector('#ci-talhao').value,cultura:back.querySelector('#ci-cultura').value,
+    const vals={propertyId:c.propertyId||currentProperty()?.id,talhao:back.querySelector('#ci-talhao').value,cultura:back.querySelector('#ci-cultura').value,
       variedade:back.querySelector('#ci-var').value.trim(),status:back.querySelector('#ci-status').value,
       dataPlantio:back.querySelector('#ci-plantio').value,qtdPlantas:Number(back.querySelector('#ci-qtd').value||0),
       areaUtilizada:Number(back.querySelector('#ci-areautil').value||0),estInicioProducao:back.querySelector('#ci-estprod').value,
@@ -900,10 +967,10 @@ function openProducaoForm(id){
     back.onclick=(e)=>{ if(e.target===back) back.remove(); };
     return;
   }
-  const p=id? DB.producao.find(x=>x.id===id) : {cicloId:DB.ciclos[0]?.id,data:todayISO(),quantidade:0,unidade:'kg',destino:'consumo próprio',valor:0,obs:''};
+  const p=id? DB.producao.find(x=>x.id===id) : {propertyId:currentProperty()?.id,cicloId:DB.ciclos.find(c=>c.propertyId===currentProperty()?.id)?.id,data:todayISO(),quantidade:0,unidade:'kg',destino:'consumo próprio',valor:0,obs:''};
   const back=document.createElement('div'); back.className='modal-back';
   back.innerHTML=`<div class="modal"><h3>${id?'Editar registro':'Novo registro de colheita'}</h3>
-    <div class="field"><label>Ciclo de produção</label><select id="pd-ciclo">${DB.ciclos.map(c=>`<option value="${c.id}" ${c.id===p.cicloId?'selected':''}>${talhaoName(c.talhao)} · ${culturaName(c.cultura)} (${c.status})</option>`).join('')}</select></div>
+    <div class="field"><label>Ciclo de produção</label><select id="pd-ciclo">${DB.ciclos.filter(c=>c.propertyId===p.propertyId).map(c=>`<option value="${c.id}" ${c.id===p.cicloId?'selected':''}>${talhaoName(c.talhao)} · ${culturaName(c.cultura)} (${c.status})</option>`).join('')}</select></div>
     <div class="row2"><div class="field"><label>Data</label><input type="date" id="pd-data" value="${p.data}"></div>
     <div class="field"><label>Destino</label><select id="pd-dest">${PROD_DESTINOS.map(d=>`<option ${d===p.destino?'selected':''}>${d}</option>`).join('')}</select></div></div>
     <div class="row2"><div class="field"><label>Quantidade</label><input type="number" step="0.01" id="pd-qtd" value="${p.quantidade}"></div>
@@ -915,7 +982,7 @@ function openProducaoForm(id){
   back.querySelector('#pd-cancel').onclick=()=>back.remove();
   back.onclick=(e)=>{ if(e.target===back) back.remove(); };
   back.querySelector('#pd-save').onclick=()=>{
-    const vals={cicloId:back.querySelector('#pd-ciclo').value,data:back.querySelector('#pd-data').value,
+    const vals={propertyId:p.propertyId||currentProperty()?.id,cicloId:back.querySelector('#pd-ciclo').value,data:back.querySelector('#pd-data').value,
       quantidade:Number(back.querySelector('#pd-qtd').value||0),unidade:back.querySelector('#pd-un').value.trim()||'un',
       destino:back.querySelector('#pd-dest').value,valor:Number(back.querySelector('#pd-valor').value||0),obs:back.querySelector('#pd-obs').value.trim()};
     if(id){ Object.assign(p,vals); } else DB.producao.push(Object.assign({id:'pd'+Date.now()},vals));
@@ -1024,9 +1091,11 @@ function bindContentEvents(){
   });
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ propTab=b.dataset.tab; renderContent(); });
   const addProp=document.querySelector('[data-add-prop]'); if(addProp) addProp.onclick=()=>openPropertyForm();
+  const focusProp=document.querySelector('#property-focus'); if(focusProp) focusProp.onchange=()=>setCurrentProperty(focusProp.value);
+  const dashProp=document.querySelector('#dashboard-property'); if(dashProp) dashProp.onchange=()=>setCurrentProperty(dashProp.value);
   document.querySelectorAll('[data-edit-prop]').forEach(b=>b.onclick=()=>openPropertyForm(b.dataset.editProp));
   document.querySelectorAll('[data-del-prop]').forEach(b=>b.onclick=()=>{
-    DB.properties=DB.properties.filter(x=>x.id!==b.dataset.delProp); save(); renderContent();
+    const deleting=b.dataset.delProp; DB.properties=DB.properties.filter(x=>x.id!==deleting); if(DB.currentPropertyId===deleting) DB.currentPropertyId=DB.properties[0]?.id||null; save(); renderContent();
   });
   const addArea=document.querySelector('[data-add-area]'); if(addArea) addArea.onclick=()=>openAreaForm();
   document.querySelectorAll('[data-edit-area]').forEach(b=>b.onclick=()=>openAreaForm(b.dataset.editArea));
@@ -1047,7 +1116,7 @@ function bindContentEvents(){
   const gotoTal=document.querySelector('[data-goto-talhoes]'); if(gotoTal) gotoTal.onclick=()=>{ view='propriedade'; propTab='talhoes'; renderNav(); renderContent(); };
   const toggleProdSec=document.querySelector('[data-toggle-prodsec]'); if(toggleProdSec) toggleProdSec.onclick=()=>{ prodSecOpen=!prodSecOpen; renderContent(); };
   const saveLoc=document.querySelector('[data-save-loc]'); if(saveLoc) saveLoc.onclick=()=>{
-    const prop=DB.properties[0]; if(!prop) return;
+    const prop=currentProperty(); if(!prop) return;
     const latRaw=document.getElementById('loc-lat').value, lonRaw=document.getElementById('loc-lon').value;
     let lat=latRaw===''?null:Number(latRaw), lon=lonRaw===''?null:Number(lonRaw);
     if(lat!==null && !isNaN(lat)) lat=Math.max(-90,Math.min(90,lat)); else if(latRaw!=='') lat=null;
@@ -1106,12 +1175,12 @@ function openPropertyForm(id){
     const areaVal=back.querySelector('#pf-area').value.trim();
     const purpose=back.querySelector('#pf-purpose').value.trim();
     if(id){ Object.assign(p,{name,area:areaVal,purpose}); }
-    else DB.properties.push({id:'p'+Date.now(),name,area:areaVal,purpose,cidade:'',estado:'',pais:'',timezone:'America/Sao_Paulo',latitude:null,longitude:null});
+    else { const newProp={id:'p'+Date.now(),name,area:areaVal,purpose,cidade:'',estado:'',pais:'',timezone:'America/Sao_Paulo',latitude:null,longitude:null}; DB.properties.push(newProp); DB.currentPropertyId=newProp.id; }
     save(); back.remove(); renderContent();
   };
 }
 function openAreaForm(id){
-  const a=id? DB.areas.find(x=>x.id===id) : {name:'',uso:'',propertyId:DB.properties[0]?.id};
+  const a=id? DB.areas.find(x=>x.id===id) : {name:'',uso:'',propertyId:currentProperty()?.id};
   const back=document.createElement('div'); back.className='modal-back';
   back.innerHTML=`<div class="modal"><h3>${id?'Editar área':'Nova área'}</h3>
     <div class="field"><label>Nome da área</label><input id="af-name" value="${a.name.replace(/"/g,'&quot;')}" placeholder="Ex: Fundo"></div>
@@ -1137,13 +1206,14 @@ const CULT_CATS=['fruta','raiz','grão','hortaliça','árvore','ornamental','out
 const CULT_FINS=['consumo próprio','venda','produção','sombra','lenha','alimentação animal','ornamental','outros'];
 const CULT_STATUS=['ativa','colhida','perdida','removida'];
 function openCulturaForm(id){
-  const c=id? DB.culturas.find(x=>x.id===id) : {nome:'',variedade:'',area:DB.areas[0]?.id,categoria:'fruta',finalidade:'consumo próprio',status:'ativa',plantio:'',obs:''};
+  const c=id? DB.culturas.find(x=>x.id===id) : {nome:'',variedade:'',propertyId:currentProperty()?.id,area:areasByProperty(currentProperty()?.id)[0]?.id,categoria:'fruta',finalidade:'consumo próprio',status:'ativa',plantio:'',obs:''};
   const back=document.createElement('div'); back.className='modal-back';
   back.innerHTML=`<div class="modal"><h3>${id?'Editar cultura':'Nova cultura'}</h3>
     <div class="field"><label>Nome</label><input id="cf-nome" value="${c.nome.replace(/"/g,'&quot;')}" placeholder="Ex: Amora-preta"></div>
+    <div class="field"><label>Propriedade</label><select id="cf-prop">${DB.properties.map(p=>`<option value="${p.id}" ${p.id===c.propertyId?'selected':''}>${p.name}</option>`).join('')}</select></div>
     <div class="row2">
       <div class="field"><label>Variedade</label><input id="cf-var" value="${c.variedade||''}"></div>
-      <div class="field"><label>Área</label><select id="cf-area">${DB.areas.map(a=>`<option value="${a.id}" ${a.id===c.area?'selected':''}>${a.name}</option>`).join('')}</select></div>
+      <div class="field"><label>Área</label><select id="cf-area">${areasByProperty(c.propertyId).map(a=>`<option value="${a.id}" ${a.id===c.area?'selected':''}>${a.name}</option>`).join('')}</select></div>
     </div>
     <div class="row2">
       <div class="field"><label>Categoria</label><select id="cf-cat">${CULT_CATS.map(x=>`<option ${x===c.categoria?'selected':''}>${x}</option>`).join('')}</select></div>
@@ -1160,11 +1230,12 @@ function openCulturaForm(id){
     </div></div>`;
   document.body.appendChild(back);
   back.querySelector('#cf-cancel').onclick=()=>back.remove();
+  back.querySelector('#cf-prop').onchange=()=>{ const pid=back.querySelector('#cf-prop').value; const a=areasByProperty(pid); back.querySelector('#cf-area').innerHTML=a.map(x=>`<option value=\"${x.id}\">${x.name}</option>`).join('')||'<option value=\"\">Sem áreas cadastradas</option>'; };
   back.onclick=(e)=>{ if(e.target===back) back.remove(); };
   back.querySelector('#cf-save').onclick=()=>{
     const nome=back.querySelector('#cf-nome').value.trim(); if(!nome) return;
     const vals={
-      nome, variedade:back.querySelector('#cf-var').value.trim(),
+      nome, propertyId:back.querySelector('#cf-prop').value, variedade:back.querySelector('#cf-var').value.trim(),
       area:back.querySelector('#cf-area').value,
       categoria:back.querySelector('#cf-cat').value,
       finalidade:back.querySelector('#cf-fin').value,
@@ -1179,12 +1250,15 @@ function openCulturaForm(id){
 }
 document.getElementById('fab').onclick=openNewTask;
 function openNewTask(){
+  const defaultProp=currentProperty()||DB.properties[0];
+  const areas=defaultProp?areasByProperty(defaultProp.id):[];
   const back=document.createElement('div'); back.className='modal-back';
   back.innerHTML=`<div class="modal">
     <h3>Nova tarefa</h3>
     <div class="field"><label>Título</label><input id="f-title" placeholder="Ex: Podar as amoreiras"></div>
+    <div class="field"><label>Propriedade</label><select id="f-prop">${DB.properties.map(p=>`<option value="${p.id}" ${p.id===defaultProp?.id?'selected':''}>${p.name}</option>`).join('')}</select></div>
     <div class="row2">
-      <div class="field"><label>Área</label><select id="f-area">${DB.areas.map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}</select></div>
+      <div class="field"><label>Área</label><select id="f-area">${areas.map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}</select></div>
       <div class="field"><label>Prioridade</label><select id="f-prio"><option value="baixa">Baixa</option><option value="normal" selected>Normal</option><option value="alta">Alta</option></select></div>
     </div>
     <div class="row2">
@@ -1192,30 +1266,29 @@ function openNewTask(){
       <div class="field"><label>Categoria</label><select id="f-cat"><option>manutenção</option><option>plantio</option><option>poda</option><option>irrigação</option><option>limpeza</option><option>compra</option><option>outros</option></select></div>
     </div>
     <label style="display:flex;gap:8px;align-items:center;font-size:.88rem;margin-bottom:16px"><input type="checkbox" id="f-visita"> Incluir na próxima visita</label>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn ghost" id="f-cancel">Cancelar</button>
-      <button class="btn" id="f-save">Salvar tarefa</button>
-    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" id="f-cancel">Cancelar</button><button class="btn" id="f-save">Salvar tarefa</button></div>
   </div>`;
   document.body.appendChild(back);
+  const propSel=back.querySelector('#f-prop');
+  const areaSel=back.querySelector('#f-area');
+  function refreshTaskAreas(){
+    const list=areasByProperty(propSel.value);
+    areaSel.innerHTML=list.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+    if(!list.length) areaSel.innerHTML='<option value="">Sem áreas cadastradas</option>';
+  }
+  propSel.onchange=refreshTaskAreas;
   back.querySelector('#f-cancel').onclick=()=>back.remove();
   back.onclick=(e)=>{ if(e.target===back) back.remove(); };
   back.querySelector('#f-save').onclick=()=>{
-    const title=back.querySelector('#f-title').value.trim();
-    if(!title) return;
-    DB.tasks.push({
-      id:'t'+Date.now(), title,
-      area:back.querySelector('#f-area').value,
-      categoria:back.querySelector('#f-cat').value,
-      prioridade:back.querySelector('#f-prio').value,
-      status:'pendente',
-      date:back.querySelector('#f-date').value,
-      recorrente:false,
-      visita:back.querySelector('#f-visita').checked
-    });
+    const title=back.querySelector('#f-title').value.trim(); if(!title) return;
+    const propertyId=propSel.value; const areaId=areaSel.value;
+    if(!propertyId) return;
+    DB.tasks.push({id:'t'+Date.now(),title,propertyId,areaId,area:areaId,categoria:back.querySelector('#f-cat').value,prioridade:back.querySelector('#f-prio').value,status:'pendente',date:back.querySelector('#f-date').value,recorrente:false,visita:back.querySelector('#f-visita').checked});
+    DB.currentPropertyId=propertyId;
     save(); back.remove(); view='tarefas'; renderNav(); renderContent();
   };
 }
+
 renderNav(); renderContent();
 </script>
 </body>
